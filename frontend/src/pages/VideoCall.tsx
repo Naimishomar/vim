@@ -1,0 +1,499 @@
+import { useEffect, useRef, useState, useCallback } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
+import {
+  Video, VideoOff, Mic, MicOff, PhoneOff, SkipForward,
+  AlertTriangle, MessageSquare, Send, X, Headphones, RefreshCw
+} from 'lucide-react';
+import { useCallStore } from '../store/callStore';
+import { webrtcService, attachStreamToVideo, type MediaErrorCode } from '../services/webrtcService';
+import { socketService } from '../services/socketService';
+import { useNavigate, useLocation } from 'react-router-dom';
+
+const MEDIA_ERROR_MESSAGES: Record<MediaErrorCode, string> = {
+  'not-supported': 'Your browser does not support camera access. Try Chrome or Firefox on HTTPS/localhost.',
+  'permission-denied': 'Camera or microphone access was denied. Allow permissions in your browser settings and try again.',
+  'not-found': 'No camera or microphone was found. Connect a device and try again.',
+  'unknown': 'Could not access your camera or microphone. Please check your device and try again.',
+};
+
+export default function VideoCall() {
+  const { isSearching, isMatched, peerSocketId, peerData, messages, setSearching, setMatch, endCall, addMessage } = useCallStore();
+  const localVideoRef = useRef<HTMLVideoElement>(null);
+  const remoteVideoRef = useRef<HTMLVideoElement>(null);
+  const chatEndRef = useRef<HTMLDivElement>(null);
+  const navigate = useNavigate();
+  const location = useLocation();
+
+  const isAudioOnly = location.pathname.includes('/audio');
+
+  const [isMicOn, setIsMicOn] = useState(true);
+  const [isVideoOn, setIsVideoOn] = useState(!isAudioOnly);
+  const [isChatOpen, setIsChatOpen] = useState(false);
+  const [messageInput, setMessageInput] = useState('');
+  const [isTyping, setIsTyping] = useState(false);
+  const [peerTyping, setPeerTyping] = useState(false);
+  const [unreadCount, setUnreadCount] = useState(0);
+  const [mediaError, setMediaError] = useState<MediaErrorCode | null>(null);
+  const [isCameraLoading, setIsCameraLoading] = useState(!isAudioOnly);
+  const [localStreamVersion, setLocalStreamVersion] = useState(0);
+  const typingTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const isChatOpenRef = useRef(isChatOpen);
+
+  const startLocalCamera = useCallback(async () => {
+    if (isAudioOnly) {
+      setIsCameraLoading(true);
+      const { stream, error } = await webrtcService.startLocalStream(false);
+      setIsCameraLoading(false);
+      if (error) setMediaError(error);
+      else setMediaError(null);
+      return stream;
+    }
+
+    setIsCameraLoading(true);
+    const { stream, error } = await webrtcService.startLocalStream(true);
+    setIsCameraLoading(false);
+
+    if (error) {
+      setMediaError(error);
+      return null;
+    }
+
+    setMediaError(null);
+    setLocalStreamVersion((v) => v + 1);
+    return stream;
+  }, [isAudioOnly]);
+
+  useEffect(() => {
+    socketService.connect();
+
+    const onMatchFound = async (data: {
+      roomId: string;
+      peerSocketId: string;
+      peerData: typeof peerData;
+      isInitiator: boolean;
+    }) => {
+      setMatch({ roomId: data.roomId, peerSocketId: data.peerSocketId, peerData: data.peerData });
+
+      const onRemoteStream = (stream: MediaStream) => {
+        attachStreamToVideo(remoteVideoRef.current, stream);
+      };
+
+      const ok = await webrtcService.initialize(
+        data.isInitiator,
+        data.peerSocketId,
+        !isAudioOnly,
+        onRemoteStream,
+      );
+
+      if (!ok && !mediaError) {
+        setMediaError('unknown');
+      }
+
+      attachStreamToVideo(localVideoRef.current, webrtcService.localStream);
+    };
+
+    const onWebRtcOffer = async (data: { peerSocketId: string; offer: RTCSessionDescriptionInit }) => {
+      await webrtcService.handleOffer(data.offer, data.peerSocketId, (stream) => {
+        attachStreamToVideo(remoteVideoRef.current, stream);
+      });
+      attachStreamToVideo(localVideoRef.current, webrtcService.localStream);
+    };
+
+    const onWebRtcAnswer = async (data: { answer: RTCSessionDescriptionInit }) => {
+      await webrtcService.handleAnswer(data.answer);
+    };
+
+    const onWebRtcIceCandidate = async (data: { candidate: RTCIceCandidateInit }) => {
+      await webrtcService.handleIceCandidate(data.candidate);
+    };
+
+    const onPartnerDisconnected = () => {
+      handleSkip();
+    };
+
+    const onReceiveMessage = (data: { message: string; timestamp: Date }) => {
+      addMessage({ from: 'peer', text: data.message, timestamp: data.timestamp });
+      if (!isChatOpenRef.current) {
+        setUnreadCount((c) => c + 1);
+      }
+    };
+
+    const onTyping = (data: { isTyping: boolean }) => {
+      setPeerTyping(data.isTyping);
+    };
+
+    socketService.on('match-found', onMatchFound);
+    socketService.on('webrtc-offer', onWebRtcOffer);
+    socketService.on('webrtc-answer', onWebRtcAnswer);
+    socketService.on('webrtc-ice-candidate', onWebRtcIceCandidate);
+    socketService.on('partner-disconnected', onPartnerDisconnected);
+    socketService.on('receive-message', onReceiveMessage);
+    socketService.on('typing', onTyping);
+
+    void startLocalCamera();
+    handleStartSearch();
+
+    return () => {
+      socketService.off('match-found', onMatchFound);
+      socketService.off('webrtc-offer', onWebRtcOffer);
+      socketService.off('webrtc-answer', onWebRtcAnswer);
+      socketService.off('webrtc-ice-candidate', onWebRtcIceCandidate);
+      socketService.off('partner-disconnected', onPartnerDisconnected);
+      socketService.off('receive-message', onReceiveMessage);
+      socketService.off('typing', onTyping);
+
+      socketService.emit('cancel-search', { queueName: isAudioOnly ? 'random-audio' : 'random-video-480' });
+      webrtcService.endCall();
+      socketService.disconnect();
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  useEffect(() => {
+    if (!isAudioOnly && isVideoOn && !isCameraLoading) {
+      attachStreamToVideo(localVideoRef.current, webrtcService.localStream);
+    }
+  }, [localStreamVersion, isVideoOn, isCameraLoading, isAudioOnly]);
+
+  useEffect(() => {
+    chatEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+  }, [messages]);
+
+  useEffect(() => {
+    if (isChatOpen) setUnreadCount(0);
+    isChatOpenRef.current = isChatOpen;
+  }, [isChatOpen]);
+
+  const handleStartSearch = () => {
+    setSearching(true);
+    socketService.emit('search', {
+      userId: 'guest-' + Math.random().toString(36).substring(7),
+      queueName: isAudioOnly ? 'random-audio' : 'random-video-480',
+    });
+  };
+
+  const handleSkip = () => {
+    webrtcService.endPeerConnection();
+    if (peerSocketId) socketService.emit('skip', { peerSocketId });
+    handleStartSearch();
+  };
+
+  const handleEndCall = () => {
+    webrtcService.endCall();
+    if (peerSocketId) socketService.emit('skip', { peerSocketId });
+    endCall();
+    navigate('/');
+  };
+
+  const toggleMic = () => {
+    const enabled = !isMicOn;
+    setIsMicOn(enabled);
+    webrtcService.localStream?.getAudioTracks().forEach((t) => { t.enabled = enabled; });
+  };
+
+  const toggleVideo = async () => {
+    const enabled = !isVideoOn;
+    const success = await webrtcService.setVideoEnabled(enabled);
+    if (!success) {
+      setMediaError('permission-denied');
+      return;
+    }
+    setIsVideoOn(enabled);
+    setMediaError(null);
+    setLocalStreamVersion((v) => v + 1);
+  };
+
+  const handleRetryCamera = () => {
+    setMediaError(null);
+    void startLocalCamera();
+  };
+
+  const handleSendMessage = () => {
+    const text = messageInput.trim();
+    if (!text || !peerSocketId) return;
+    socketService.emit('send-message', { peerSocketId, message: text });
+    addMessage({ from: 'me', text, timestamp: new Date() });
+    setMessageInput('');
+    socketService.emit('typing', { peerSocketId, isTyping: false });
+    setIsTyping(false);
+  };
+
+  const handleInputChange = (val: string) => {
+    setMessageInput(val);
+    if (!peerSocketId) return;
+    if (!isTyping) {
+      setIsTyping(true);
+      socketService.emit('typing', { peerSocketId, isTyping: true });
+    }
+    if (typingTimeoutRef.current) clearTimeout(typingTimeoutRef.current);
+    typingTimeoutRef.current = setTimeout(() => {
+      setIsTyping(false);
+      socketService.emit('typing', { peerSocketId, isTyping: false });
+    }, 1500);
+  };
+
+  const showLocalPreview = !isAudioOnly && (webrtcService.localStream || isCameraLoading);
+
+  return (
+    <div className="h-screen w-full bg-black flex flex-col relative overflow-hidden select-none">
+
+      {isAudioOnly && (
+        <div className="absolute top-0 left-0 right-0 z-20 flex items-center justify-center gap-2 py-2 bg-violet-600/20 border-b border-violet-500/30 text-violet-300 text-sm">
+          <Headphones size={16} />
+          <span>Audio-only mode</span>
+        </div>
+      )}
+
+      {/* Media error banner */}
+      {mediaError && (
+        <div className="absolute top-0 left-0 right-0 z-30 flex items-center justify-between gap-3 px-4 py-3 bg-red-950/90 border-b border-red-500/40 text-red-200 text-sm">
+          <div className="flex items-center gap-2 min-w-0">
+            <AlertTriangle size={16} className="shrink-0 text-red-400" />
+            <span className="truncate">{MEDIA_ERROR_MESSAGES[mediaError]}</span>
+          </div>
+          <button
+            onClick={handleRetryCamera}
+            className="shrink-0 flex items-center gap-1.5 px-3 py-1 rounded-full bg-red-500/20 hover:bg-red-500/30 text-red-200 text-xs font-medium transition-colors"
+          >
+            <RefreshCw size={12} />
+            Retry
+          </button>
+        </div>
+      )}
+
+      <div className="absolute inset-0 bg-zinc-900 flex items-center justify-center">
+        {isSearching || !isMatched ? (
+          <motion.div
+            initial={{ opacity: 0, scale: 0.9 }}
+            animate={{ opacity: 1, scale: 1 }}
+            className="flex flex-col items-center gap-6 text-zinc-400"
+          >
+            <div className="relative">
+              <div className="w-20 h-20 rounded-full border-4 border-violet-500/40 border-t-violet-500 animate-spin" />
+              <div className="absolute inset-0 flex items-center justify-center">
+                {isAudioOnly ? <Headphones size={28} className="text-violet-400" /> : <Video size={28} className="text-violet-400" />}
+              </div>
+            </div>
+            <div className="text-center">
+              <p className="text-xl font-semibold text-white">Finding someone…</p>
+              <p className="text-sm text-zinc-500 mt-1">Looking for a {isAudioOnly ? 'voice' : 'video'} partner</p>
+              {!isAudioOnly && webrtcService.localStream && (
+                <p className="text-xs text-green-400/80 mt-2">Camera ready</p>
+              )}
+            </div>
+          </motion.div>
+        ) : (
+          <>
+            {isAudioOnly ? (
+              <motion.div
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                className="flex flex-col items-center gap-4"
+              >
+                <div className="w-32 h-32 rounded-full bg-gradient-to-br from-violet-500 to-indigo-600 flex items-center justify-center shadow-2xl shadow-violet-500/30">
+                  <span className="text-5xl font-bold text-white">
+                    {peerData?.name?.[0]?.toUpperCase() ?? '?'}
+                  </span>
+                </div>
+                <p className="text-white font-semibold text-lg">{peerData?.name ?? 'Stranger'}</p>
+                {peerTyping && <p className="text-zinc-400 text-sm italic animate-pulse">typing…</p>}
+              </motion.div>
+            ) : (
+              <video ref={remoteVideoRef} className="w-full h-full object-cover" autoPlay playsInline />
+            )}
+          </>
+        )}
+      </div>
+
+      {/* Local video PiP — visible while waiting or in call */}
+      {showLocalPreview && (
+        <motion.div
+          drag
+          dragConstraints={{ left: 0, right: 0, top: 0, bottom: 0 }}
+          className="absolute top-6 right-6 w-44 h-64 bg-zinc-800 rounded-2xl overflow-hidden shadow-2xl border border-white/10 cursor-move z-10"
+        >
+          {isCameraLoading ? (
+            <div className="w-full h-full flex flex-col items-center justify-center gap-2 bg-zinc-800">
+              <div className="w-8 h-8 rounded-full border-2 border-violet-500/40 border-t-violet-500 animate-spin" />
+              <span className="text-[10px] text-zinc-500">Starting camera…</span>
+            </div>
+          ) : isVideoOn && webrtcService.localStream ? (
+            <video ref={localVideoRef} className="w-full h-full object-cover mirror" autoPlay playsInline muted />
+          ) : (
+            <div className="w-full h-full flex items-center justify-center bg-zinc-800">
+              <VideoOff size={28} className="text-zinc-500" />
+            </div>
+          )}
+          <div className="absolute bottom-2 left-2 text-[10px] text-zinc-400 font-medium bg-black/50 px-1.5 py-0.5 rounded">You</div>
+        </motion.div>
+      )}
+
+      {!isAudioOnly && isMatched && peerTyping && (
+        <div className="absolute top-6 left-6 z-10 text-xs text-zinc-300 bg-black/60 backdrop-blur px-3 py-1.5 rounded-full flex items-center gap-2">
+          <span className="flex gap-0.5">
+            <span className="w-1.5 h-1.5 bg-zinc-400 rounded-full animate-bounce" style={{ animationDelay: '0ms' }} />
+            <span className="w-1.5 h-1.5 bg-zinc-400 rounded-full animate-bounce" style={{ animationDelay: '150ms' }} />
+            <span className="w-1.5 h-1.5 bg-zinc-400 rounded-full animate-bounce" style={{ animationDelay: '300ms' }} />
+          </span>
+          Stranger is typing
+        </div>
+      )}
+
+      <div className="absolute bottom-8 left-1/2 -translate-x-1/2 z-10 flex items-center gap-3 bg-zinc-900/80 backdrop-blur-xl p-3 rounded-full border border-white/10 shadow-2xl">
+
+        <motion.button
+          whileTap={{ scale: 0.9 }}
+          onClick={toggleMic}
+          className={`p-3.5 rounded-full transition-colors ${isMicOn ? 'bg-zinc-800 hover:bg-zinc-700 text-white' : 'bg-red-500/20 text-red-400 hover:bg-red-500/30 ring-1 ring-red-500/50'}`}
+          title={isMicOn ? 'Mute mic' : 'Unmute mic'}
+        >
+          {isMicOn ? <Mic size={22} /> : <MicOff size={22} />}
+        </motion.button>
+
+        {!isAudioOnly && (
+          <motion.button
+            whileTap={{ scale: 0.9 }}
+            onClick={() => void toggleVideo()}
+            className={`p-3.5 rounded-full transition-colors ${isVideoOn ? 'bg-zinc-800 hover:bg-zinc-700 text-white' : 'bg-red-500/20 text-red-400 hover:bg-red-500/30 ring-1 ring-red-500/50'}`}
+            title={isVideoOn ? 'Turn off camera' : 'Turn on camera'}
+          >
+            {isVideoOn ? <Video size={22} /> : <VideoOff size={22} />}
+          </motion.button>
+        )}
+
+        <motion.button
+          whileTap={{ scale: 0.9 }}
+          onClick={() => setIsChatOpen((o) => !o)}
+          className="relative p-3.5 rounded-full bg-zinc-800 hover:bg-zinc-700 transition-colors text-white"
+          title="Toggle chat"
+        >
+          <MessageSquare size={22} />
+          {unreadCount > 0 && (
+            <span className="absolute -top-1 -right-1 w-5 h-5 bg-violet-500 rounded-full text-[10px] font-bold flex items-center justify-center text-white">
+              {unreadCount}
+            </span>
+          )}
+        </motion.button>
+
+        <motion.button
+          whileTap={{ scale: 0.9 }}
+          onClick={handleEndCall}
+          className="p-3.5 rounded-full bg-red-500 hover:bg-red-600 transition-colors text-white shadow-lg shadow-red-500/30"
+          title="End call"
+        >
+          <PhoneOff size={22} />
+        </motion.button>
+
+        <div className="w-px h-8 bg-white/20 mx-1" />
+
+        <motion.button
+          whileTap={{ scale: 0.9 }}
+          onClick={handleSkip}
+          className="px-5 py-3 rounded-full bg-violet-600 hover:bg-violet-500 transition-colors text-white font-semibold text-sm flex items-center gap-2"
+          title="Skip to next person"
+        >
+          Next
+          <SkipForward size={18} />
+        </motion.button>
+
+        <motion.button
+          whileTap={{ scale: 0.9 }}
+          className="p-3.5 rounded-full bg-zinc-800 hover:bg-zinc-700 transition-colors text-zinc-500 hover:text-orange-400"
+          title="Report user"
+        >
+          <AlertTriangle size={22} />
+        </motion.button>
+      </div>
+
+      <AnimatePresence>
+        {isChatOpen && (
+          <motion.div
+            initial={{ x: '100%' }}
+            animate={{ x: 0 }}
+            exit={{ x: '100%' }}
+            transition={{ type: 'spring', damping: 25, stiffness: 260 }}
+            className="absolute top-0 right-0 bottom-0 w-80 bg-zinc-900/95 backdrop-blur-xl border-l border-white/10 flex flex-col z-20 shadow-2xl"
+          >
+            <div className="flex items-center justify-between px-4 py-3 border-b border-white/10">
+              <div className="flex items-center gap-2">
+                <MessageSquare size={16} className="text-violet-400" />
+                <span className="text-sm font-semibold text-white">Chat</span>
+                {isMatched && (
+                  <span className="text-[10px] bg-green-500/20 text-green-400 px-1.5 py-0.5 rounded-full">Connected</span>
+                )}
+              </div>
+              <button
+                onClick={() => setIsChatOpen(false)}
+                className="text-zinc-500 hover:text-white transition-colors"
+              >
+                <X size={18} />
+              </button>
+            </div>
+
+            <div className="flex-1 overflow-y-auto p-4 flex flex-col gap-3 scrollbar-thin scrollbar-thumb-zinc-700">
+              {messages.length === 0 ? (
+                <div className="flex-1 flex items-center justify-center">
+                  <p className="text-zinc-600 text-sm text-center">
+                    {isMatched ? 'Say hi 👋' : 'Connect to start chatting'}
+                  </p>
+                </div>
+              ) : (
+                messages.map((msg, i) => (
+                  <motion.div
+                    key={i}
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    className={`flex ${msg.from === 'me' ? 'justify-end' : 'justify-start'}`}
+                  >
+                    <div
+                      className={`max-w-[80%] px-3 py-2 rounded-2xl text-sm break-words ${
+                        msg.from === 'me'
+                          ? 'bg-violet-600 text-white rounded-br-sm'
+                          : 'bg-zinc-800 text-zinc-200 rounded-bl-sm'
+                      }`}
+                    >
+                      {msg.text}
+                    </div>
+                  </motion.div>
+                ))
+              )}
+
+              {peerTyping && (
+                <div className="flex justify-start">
+                  <div className="bg-zinc-800 px-4 py-2 rounded-2xl rounded-bl-sm flex gap-1 items-center">
+                    <span className="w-1.5 h-1.5 bg-zinc-500 rounded-full animate-bounce" style={{ animationDelay: '0ms' }} />
+                    <span className="w-1.5 h-1.5 bg-zinc-500 rounded-full animate-bounce" style={{ animationDelay: '150ms' }} />
+                    <span className="w-1.5 h-1.5 bg-zinc-500 rounded-full animate-bounce" style={{ animationDelay: '300ms' }} />
+                  </div>
+                </div>
+              )}
+              <div ref={chatEndRef} />
+            </div>
+
+            <div className="p-3 border-t border-white/10">
+              <div className="flex items-center gap-2 bg-zinc-800 rounded-xl px-3 py-2">
+                <input
+                  type="text"
+                  value={messageInput}
+                  onChange={(e) => handleInputChange(e.target.value)}
+                  onKeyDown={(e) => e.key === 'Enter' && handleSendMessage()}
+                  placeholder={isMatched ? 'Type a message…' : 'Waiting for match…'}
+                  disabled={!isMatched}
+                  className="flex-1 bg-transparent text-sm text-white placeholder-zinc-600 outline-none disabled:opacity-50"
+                />
+                <motion.button
+                  whileTap={{ scale: 0.85 }}
+                  onClick={handleSendMessage}
+                  disabled={!isMatched || !messageInput.trim()}
+                  className="text-violet-400 hover:text-violet-300 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+                >
+                  <Send size={18} />
+                </motion.button>
+              </div>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </div>
+  );
+}

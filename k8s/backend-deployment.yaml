@@ -1,0 +1,24 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: vibe-backend
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: vibe-backend
+  template:
+    metadata:
+      labels:
+        app: vibe-backend
+    spec:
+      containers:
+      - name: vibe-backend
+        image: vibe-backend:latest
+        ports:
+        - containerPort: 5000
+        env:
+        - name: MONGO_URI
+          value: "mongodb://vibe-mongodb:27017/vibe"
+        - name: REDIS_URL
+          value: "redis://vibe-redis:6379"
