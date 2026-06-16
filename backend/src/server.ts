@@ -7,6 +7,9 @@ import { Redis } from '@upstash/redis';
 import { ENV } from './config/env';
 import authRoutes from './routes/auth.routes';
 import webrtcRoutes from './routes/webrtc.routes';
+import paymentRoutes from './routes/payment.routes';
+import userRoutes from './routes/user.routes';
+import path from 'path';
 
 const app = express();
 const httpServer = createServer(app);
@@ -23,6 +26,8 @@ app.use(express.json());
 // Routes
 app.use('/api/auth', authRoutes);
 app.use('/api/webrtc', webrtcRoutes);
+app.use('/api/payment', paymentRoutes);
+app.use('/api/users', userRoutes);
 
 // ─── Database Connection ───
 export const connectDB = async () => {
@@ -59,3 +64,13 @@ export const io = new Server(httpServer, {
 });
 
 export { httpServer, app };
+
+// ─── Serve Frontend in Production ───
+if (process.env.NODE_ENV === 'production') {
+  const frontendDistPath = path.join(__dirname, '../../frontend/dist');
+  app.use(express.static(frontendDistPath));
+  
+  app.get('*', (req, res) => {
+    res.sendFile(path.join(frontendDistPath, 'index.html'));
+  });
+}
