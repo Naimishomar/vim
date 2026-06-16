@@ -11,8 +11,16 @@ import Contact from './pages/Contact';
 
 import OnboardingModal from './components/OnboardingModal';
 import { ReactLenis } from 'lenis/react';
+import { useEffect } from 'react';
+import { useAuthStore } from './store/useAuthStore';
 
 function App() {
+  const checkAuth = useAuthStore(state => state.checkAuth);
+
+  useEffect(() => {
+    checkAuth();
+  }, [checkAuth]);
+
   return (
     <ReactLenis root>
       <Router>

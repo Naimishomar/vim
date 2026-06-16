@@ -15,9 +15,9 @@ export default function Lobby() {
   const [audioLevel, setAudioLevel] = useState(0);
   const [error, setError] = useState<string | null>(null);
   const [agreed, setAgreed] = useState(false);
-  const [targetCountry, setTargetCountry] = useState('Global');
+  const [targetCountry, setTargetCountry] = useState(() => localStorage.getItem('vibe_target_country') || 'Global');
   const [isCountryDropdownOpen, setIsCountryDropdownOpen] = useState(false);
-  const [targetGender, setTargetGender] = useState('Opposite Gender');
+  const [targetGender, setTargetGender] = useState(() => localStorage.getItem('vibe_target_gender') || 'Opposite Gender');
   const [isGenderDropdownOpen, setIsGenderDropdownOpen] = useState(false);
   const { user, isAuthenticated } = useAuthStore();
   
@@ -92,6 +92,15 @@ export default function Lobby() {
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isAudioOnly]);
+
+  // Persist matchmaking preferences
+  useEffect(() => {
+    localStorage.setItem('vibe_target_country', targetCountry);
+  }, [targetCountry]);
+
+  useEffect(() => {
+    localStorage.setItem('vibe_target_gender', targetGender);
+  }, [targetGender]);
 
   const handleEnterQueue = () => {
     if (stream) {
