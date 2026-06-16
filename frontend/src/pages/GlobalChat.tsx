@@ -4,6 +4,7 @@ import { io, Socket } from 'socket.io-client';
 import { Users, Search, Trash2 } from 'lucide-react';
 import { useAuthStore } from '../store/useAuthStore';
 import DirectChatWindow from '../components/Chat/DirectChatWindow';
+import SEO from '../components/SEO';
 
 export default function GlobalChat() {
   const { user, isAuthenticated } = useAuthStore();
@@ -159,6 +160,11 @@ export default function GlobalChat() {
 
   return (
     <div className="h-screen bg-[#15171B] text-white font-sans flex flex-col overflow-hidden">
+      <SEO 
+        title="Global Chat Room | Talk to Strangers Online - Vibelly" 
+        description="Join Vibelly's global chat room to meet strangers, make friends, and chat anonymously with people all over the world."
+        canonicalUrl="/chat"
+      />
       {/* ─── Dot Grid Background ─── */}
       <div
         className="absolute inset-0 z-0 pointer-events-none opacity-[0.15]"

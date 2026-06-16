@@ -6,6 +6,7 @@ import {
   Zap, MessageSquare, SkipForward, Globe, Check, ChevronDown
 } from 'lucide-react';
 import Navbar from '../components/Navbar';
+import SEO from '../components/SEO';
 import Footer from '../components/Footer';
 
 /* ─── Data ─── */
@@ -162,6 +163,11 @@ export default function Home() {
 
   return (
     <div className="min-h-screen bg-[#15171B] text-white flex flex-col font-sans">
+      <SEO 
+        title="Vibelly | The Best Free Omegle Alternative & Random Video Chat" 
+        description="Vibelly is the ultimate free alternative to Omegle and OmeTV. Instantly connect with strangers worldwide through high-quality random video calling and chat."
+        canonicalUrl="/"
+      />
 
       {/* ─── Dot Grid ─── */}
       <div

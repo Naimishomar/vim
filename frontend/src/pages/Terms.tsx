@@ -1,9 +1,15 @@
 import Navbar from '../components/Navbar';
 import Footer from '../components/Footer';
+import SEO from '../components/SEO';
 
 export default function Terms() {
   return (
     <div className="min-h-screen bg-[#15171B] text-white font-sans flex flex-col relative">
+      <SEO 
+        title="Terms of Service & Privacy Policy | Vibelly" 
+        description="Read the terms of service and privacy policy for Vibelly. We prioritize your anonymity and data protection."
+        canonicalUrl="/terms"
+      />
       {/* ─── Dot Grid ─── */}
       <div
         className="fixed inset-0 z-0 pointer-events-none opacity-[0.15]"

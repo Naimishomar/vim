@@ -1,10 +1,16 @@
 import Navbar from '../components/Navbar';
 import Footer from '../components/Footer';
+import SEO from '../components/SEO';
 import { Mail, MapPin, Phone } from 'lucide-react';
 
 export default function Contact() {
   return (
-    <div className="min-h-screen bg-[#15171B] text-white font-sans flex flex-col relative">
+    <div className="min-h-screen bg-[#15171B] text-white flex flex-col font-sans relative">
+      <SEO 
+        title="Contact Us | Vibelly Support" 
+        description="Need help? Contact Vibelly support for any inquiries, technical issues, or feedback."
+        canonicalUrl="/contact"
+      />
       {/* ─── Dot Grid ─── */}
       <div
         className="fixed inset-0 z-0 pointer-events-none opacity-[0.15]"

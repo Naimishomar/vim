@@ -10,6 +10,7 @@ import { socketService } from '../services/socketService';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuthStore } from '../store/useAuthStore';
 import LightRays from '../components/LightRays';
+import SEO from '../components/SEO';
 
 const MEDIA_ERROR_MESSAGES: Record<MediaErrorCode, string> = {
   'not-supported': 'Your browser does not support camera access. Try Chrome or Firefox on HTTPS/localhost.',
@@ -382,6 +383,11 @@ export default function VideoCall() {
 
   return (
     <div className="h-screen w-full bg-black flex flex-col relative overflow-hidden select-none">
+      <SEO 
+        title="Random Video Call | Meet Strangers Instantly - Vibelly" 
+        description="Start a random video call or voice chat instantly on Vibelly. Talk to strangers safely and anonymously in high quality."
+        canonicalUrl="/call"
+      />
 
       {isAudioOnly && (
         <div className="absolute top-0 left-0 right-0 z-20 flex items-center justify-center gap-2 py-2 bg-zinc-800/90 border-b border-zinc-700 backdrop-blur text-white text-sm shadow-md">

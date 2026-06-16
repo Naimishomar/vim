@@ -3,6 +3,7 @@ import { motion } from 'framer-motion';
 import { Check } from 'lucide-react';
 import Navbar from '../components/Navbar';
 import Footer from '../components/Footer';
+import SEO from '../components/SEO';
 import { useAuthStore } from '../store/useAuthStore';
 import { useNavigate } from 'react-router-dom';
 
@@ -197,6 +198,11 @@ export default function Pricing() {
 
   return (
     <div className="min-h-screen bg-[#15171B] text-white font-sans flex flex-col relative">
+      <SEO 
+        title="Vibelly Premium | Enhance Your Random Chat Experience" 
+        description="Upgrade to Vibelly Premium for an ad-free experience, priority matchmaking, and exclusive badges."
+        canonicalUrl="/pricing"
+      />
       {/* ─── Dot Grid ─── */}
       <div
         className="fixed inset-0 z-0 pointer-events-none opacity-[0.15]"

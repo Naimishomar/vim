@@ -12,6 +12,7 @@ import Contact from './pages/Contact';
 import OnboardingModal from './components/OnboardingModal';
 import { ReactLenis } from 'lenis/react';
 import { useEffect } from 'react';
+import { HelmetProvider } from 'react-helmet-async';
 import { useAuthStore } from './store/useAuthStore';
 
 function App() {
@@ -22,7 +23,8 @@ function App() {
   }, [checkAuth]);
 
   return (
-    <ReactLenis root>
+    <HelmetProvider>
+      <ReactLenis root>
       <Router>
         <OnboardingModal />
         <Routes>
@@ -39,7 +41,8 @@ function App() {
           <Route path="/contact" element={<Contact />} />
         </Routes>
       </Router>
-    </ReactLenis>
+      </ReactLenis>
+    </HelmetProvider>
   );
 }
 
