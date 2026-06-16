@@ -7,17 +7,9 @@ import { Redis } from '@upstash/redis';
 import { ENV } from './config/env';
 import authRoutes from './routes/auth.routes';
 import webrtcRoutes from './routes/webrtc.routes';
-import chatRoutes from './routes/chat.routes';
-import oauthRoutes from './routes/oauth.routes';
-import uploadRoutes from './routes/upload.routes';
-import passport from './config/passport';
-import { startMediaCleanupJob } from './jobs/mediaCleanup';
 
 const app = express();
 const httpServer = createServer(app);
-
-// Initialize Jobs
-startMediaCleanupJob();
 
 // CORS config
 const corsOptions = {
@@ -27,33 +19,10 @@ const corsOptions = {
 
 app.use(cors(corsOptions));
 app.use(express.json());
-app.use(passport.initialize());
-
-import paymentRoutes from './routes/payment.routes';
-import userRoutes from './routes/user.routes';
 
 // Routes
 app.use('/api/auth', authRoutes);
 app.use('/api/webrtc', webrtcRoutes);
-app.use('/api/chat', chatRoutes);
-app.use('/api/oauth', oauthRoutes);
-app.use('/api/upload', uploadRoutes);
-app.use('/api/payment', paymentRoutes);
-app.use('/api/users', userRoutes);
-
-// ─── Serve Frontend in Production ───
-import path from 'path';
-
-if (process.env.NODE_ENV === 'production') {
-  // In the Docker container, the frontend build will be at /app/frontend/dist
-  // relative to the backend which runs from /app/backend/dist
-  const frontendDistPath = path.join(__dirname, '../../frontend/dist');
-  app.use(express.static(frontendDistPath));
-  
-  app.get('*', (req, res) => {
-    res.sendFile(path.join(frontendDistPath, 'index.html'));
-  });
-}
 
 // ─── Database Connection ───
 export const connectDB = async () => {

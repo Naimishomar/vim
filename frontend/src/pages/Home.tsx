@@ -159,7 +159,6 @@ function FAQItem({ question, answer, isLast }: { question: string, answer: strin
 export default function Home() {
   const navigate = useNavigate();
   const [activeStep, setActiveStep] = useState('find');
-  const activeStepData = steps.find((s) => s.id === activeStep)!;
 
   return (
     <div className="min-h-screen bg-[#15171B] text-white flex flex-col font-sans">
