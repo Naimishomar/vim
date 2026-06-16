@@ -1,0 +1,140 @@
+"use strict";
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.removeFromQueue = exports.addToQueue = void 0;
+const server_1 = require("../server");
+const uuid_1 = require("uuid");
+const Session_1 = __importDefault(require("../models/Session"));
+const User_1 = __importDefault(require("../models/User"));
+const addToQueue = async (socketId, userId, baseQueueName, targetCountry, targetGender) => {
+    let userGender = 'unspecified';
+    let isPremium = false;
+    let myCountry = 'unspecified';
+    if (!userId.startsWith('guest-')) {
+        const user = await User_1.default.findById(userId);
+        if (user) {
+            userGender = user.gender || 'unspecified';
+            isPremium = user.premiumStatus || false;
+            myCountry = user.country || 'unspecified';
+        }
+    }
+    // Determine which queues to check based on gender and premium status
+    const oppositeGender = userGender === 'male' ? 'female' : 'male';
+    let queuesToCheck = [];
+    if (isPremium && targetGender) {
+        if (targetGender === 'opposite' && userGender !== 'unspecified') {
+            queuesToCheck = [`${baseQueueName}:${oppositeGender}`];
+        }
+        else if (targetGender === 'same' && userGender !== 'unspecified') {
+            queuesToCheck = [`${baseQueueName}:${userGender}`];
+        }
+        else {
+            // random gender or unspecified user gender
+            queuesToCheck = [`${baseQueueName}:male`, `${baseQueueName}:female`, `${baseQueueName}:unspecified`].sort(() => Math.random() - 0.5);
+        }
+    }
+    else if (isPremium && userGender !== 'unspecified') {
+        // Default Premium users with defined gender to ONLY want opposite gender
+        queuesToCheck = [`${baseQueueName}:${oppositeGender}`];
+    }
+    else {
+        // Free users or unspecified gender
+        if (userGender !== 'unspecified') {
+            // 80% of the time, free users won't even check the opposite gender queue.
+            // If they do check it, we put same gender first to minimize opposite gender matches.
+            const shouldCheckOpposite = Math.random() < 0.2;
+            if (shouldCheckOpposite) {
+                queuesToCheck = [`${baseQueueName}:${userGender}`, `${baseQueueName}:unspecified`, `${baseQueueName}:${oppositeGender}`];
+            }
+            else {
+                queuesToCheck = [`${baseQueueName}:${userGender}`, `${baseQueueName}:unspecified`];
+            }
+        }
+        else {
+            queuesToCheck = [`${baseQueueName}:male`, `${baseQueueName}:female`, `${baseQueueName}:unspecified`];
+        }
+    }
+    let peerData = null;
+    let matchedQueue = '';
+    for (const q of queuesToCheck) {
+        if (isPremium && targetCountry) {
+            // If targetCountry is specified, find the first user from that country
+            const list = await server_1.redisClient.lrange(q, 0, -1);
+            const match = list.find(u => u && u.country?.toLowerCase() === targetCountry.toLowerCase());
+            if (match) {
+                await server_1.redisClient.lrem(q, 1, match);
+                peerData = match;
+                matchedQueue = q;
+                break;
+            }
+        }
+        else {
+            peerData = await server_1.redisClient.lpop(q);
+            if (peerData) {
+                matchedQueue = q;
+                break;
+            }
+        }
+    }
+    if (peerData) {
+        // Don't match with ourselves (same user ID or same socket connection)
+        if (peerData.userId === userId || peerData.socketId === socketId) {
+            // Discard this ghost and recursively try to find a real partner.
+            return (0, exports.addToQueue)(socketId, userId, baseQueueName, targetCountry, targetGender);
+        }
+        // Match found!
+        console.log(`Match found between ${userId} and ${peerData.userId}!`);
+        const roomId = (0, uuid_1.v4)();
+        const callType = baseQueueName.includes('audio') ? 'audio' : 'video';
+        // Create session in DB
+        try {
+            const session = new Session_1.default({ roomId, user1: userId, user2: peerData.userId, callType });
+            await session.save();
+        }
+        catch (e) {
+            console.error('Failed to create session in DB', e);
+        }
+        // Fetch user details if they are not guests
+        const user1Data = userId.startsWith('guest-')
+            ? { name: 'Guest', username: userId, profileImage: '', country: 'unspecified' }
+            : await User_1.default.findById(userId).select('name username profileImage premiumStatus country');
+        const user2Data = peerData.userId.startsWith('guest-')
+            ? { name: 'Guest', username: peerData.userId, profileImage: '', country: peerData.country || 'unspecified' }
+            : await User_1.default.findById(peerData.userId).select('name username profileImage premiumStatus country');
+        server_1.io.to(socketId).emit('match-found', {
+            roomId,
+            peerSocketId: peerData.socketId,
+            peerData: user2Data,
+            isInitiator: true,
+        });
+        server_1.io.to(peerData.socketId).emit('match-found', {
+            roomId,
+            peerSocketId: socketId,
+            peerData: user1Data,
+            isInitiator: false,
+        });
+    }
+    else {
+        // No one waiting — add self to queue
+        const myQueue = `${baseQueueName}:${userGender}`;
+        console.log(`No match found. User ${userId} is waiting in queue ${myQueue}.`);
+        await server_1.redisClient.rpush(myQueue, { socketId, userId, country: myCountry });
+    }
+};
+exports.addToQueue = addToQueue;
+const removeFromQueue = async (socketId, baseQueueName) => {
+    const queues = [`${baseQueueName}:male`, `${baseQueueName}:female`, `${baseQueueName}:unspecified`];
+    for (const q of queues) {
+        const list = await server_1.redisClient.lrange(q, 0, -1);
+        for (const data of list) {
+            if (data && data.socketId === socketId) {
+                await server_1.redisClient.lrem(q, 1, data);
+                break;
+            }
+        }
+    }
+};
+exports.removeFromQueue = removeFromQueue;
+//# sourceMappingURL=matchmaking.js.map

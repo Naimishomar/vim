@@ -1,0 +1,18 @@
+"use strict";
+Object.defineProperty(exports, "__esModule", { value: true });
+const server_1 = require("./server");
+const env_1 = require("./config/env");
+// Import socket handlers
+require("./socket/presence");
+require("./socket/matchmaking");
+require("./socket/webrtc");
+require("./socket/chat");
+const start = async () => {
+    await (0, server_1.connectDB)();
+    await (0, server_1.connectRedis)();
+    server_1.httpServer.listen(env_1.ENV.PORT, () => {
+        console.log(`Server is running on port ${env_1.ENV.PORT}`);
+    });
+};
+start();
+//# sourceMappingURL=index.js.map
