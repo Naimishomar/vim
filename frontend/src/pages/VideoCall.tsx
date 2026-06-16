@@ -24,8 +24,8 @@ function getMediaErrorMessage(error: string): string {
 }
 
 export default function VideoCall() {
-  const { isSearching, isMatched, peerSocketId, peerData, messages, setSearching, setMatch, endCall, addMessage } = useCallStore();
-  const { user, isAuthenticated } = useAuthStore();
+  const { isSearching, isMatched, peerSocketId, peerData, messages, setMatch, endCall, addMessage } = useCallStore();
+  const { user } = useAuthStore();
   const localVideoRef = useRef<HTMLVideoElement>(null);
   const remoteVideoRef = useRef<HTMLVideoElement>(null);
   const chatEndRef = useRef<HTMLDivElement>(null);
