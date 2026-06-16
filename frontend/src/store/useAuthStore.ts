@@ -45,7 +45,8 @@ export const useAuthStore = create<AuthState>()(
         
         try {
           // Adjust API URL as needed if it differs, but typically we can use standard fetch
-          const res = await fetch('http://localhost:5000/api/users/me', {
+          const backendUrl = import.meta.env.VITE_BACKEND_URL || 'http://localhost:5000';
+          const res = await fetch(`${backendUrl}/api/users/me`, {
             headers: { Authorization: `Bearer ${token}` }
           });
           if (res.ok) {

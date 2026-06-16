@@ -122,7 +122,7 @@ export default function Pricing() {
 
           if (verifyRes.success) {
             alert('Payment Successful!');
-            checkAuth(); // Refresh user state to show premium status
+            await checkAuth(); // Refresh user state to show premium status
             navigate('/');
           } else {
             alert('Payment Verification Failed!');

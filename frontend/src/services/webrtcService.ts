@@ -32,6 +32,10 @@ class WebRTCService {
   private peerSocketId: string | null = null;
   private onRemoteStreamCallback: ((stream: MediaStream) => void) | null = null;
 
+  // Queues for handling race conditions where signaling arrives before camera is ready
+  private queuedOffer: RTCSessionDescriptionInit | null = null;
+  private queuedCandidates: RTCIceCandidateInit[] = [];
+
   isMediaSupported(): boolean {
     return !!(navigator.mediaDevices?.getUserMedia);
   }
@@ -128,7 +132,20 @@ class WebRTCService {
           peerSocketId: this.peerSocketId,
           offer: this.peerConnection.localDescription,
         });
+      } else {
+        // Process any queued offer that arrived while we were getting camera permissions
+        if (this.queuedOffer) {
+          const offerToProcess = this.queuedOffer;
+          this.queuedOffer = null;
+          await this.handleOffer(offerToProcess);
+        }
       }
+
+      // Process any queued ICE candidates
+      for (const candidate of this.queuedCandidates) {
+        await this.peerConnection.addIceCandidate(new RTCIceCandidate(candidate)).catch(console.error);
+      }
+      this.queuedCandidates = [];
 
       return { ok: true };
     } catch (error) {
@@ -138,7 +155,10 @@ class WebRTCService {
   }
 
   async handleOffer(offer: RTCSessionDescriptionInit) {
-    if (!this.peerConnection) return;
+    if (!this.peerConnection) {
+      this.queuedOffer = offer;
+      return;
+    }
     await this.peerConnection.setRemoteDescription(new RTCSessionDescription(offer));
     const answer = await this.peerConnection.createAnswer();
     await this.peerConnection.setLocalDescription(answer);
@@ -156,8 +176,11 @@ class WebRTCService {
   }
 
   async handleIceCandidate(candidate: RTCIceCandidateInit) {
-    if (!this.peerConnection) return;
-    await this.peerConnection.addIceCandidate(new RTCIceCandidate(candidate));
+    if (!this.peerConnection) {
+      this.queuedCandidates.push(candidate);
+      return;
+    }
+    await this.peerConnection.addIceCandidate(new RTCIceCandidate(candidate)).catch(console.error);
   }
 
   async setVideoEnabled(enabled: boolean, resolution: '480' | '720' | '1080' = '480'): Promise<boolean> {
@@ -221,6 +244,8 @@ class WebRTCService {
     this.remoteStream = null;
     this.peerSocketId = null;
     this.onRemoteStreamCallback = null;
+    this.queuedOffer = null;
+    this.queuedCandidates = [];
   }
 
   endCall() {
