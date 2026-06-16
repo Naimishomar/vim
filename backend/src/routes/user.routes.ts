@@ -1,6 +1,7 @@
 import express from 'express';
 import User from '../models/User';
 import { requireAuth } from '../middlewares/auth.middleware';
+import Report from '../models/Report';
 
 const router = express.Router();
 
@@ -36,6 +37,30 @@ router.get('/me', requireAuth, async (req, res) => {
   } catch (error) {
     console.error('Error fetching profile:', error);
     res.status(500).json({ error: 'Failed to fetch profile' });
+  }
+});
+
+// Endpoint to report a user
+router.post('/report', requireAuth, async (req, res) => {
+  try {
+    const { reportedUserId, reason } = req.body;
+    const reporterId = (req as any).user.id;
+
+    if (!reportedUserId) {
+      return res.status(400).json({ error: 'Reported user ID is required' });
+    }
+
+    const report = new Report({
+      reporter: reporterId,
+      reportedUser: reportedUserId,
+      reason: reason || 'Inappropriate behavior'
+    });
+
+    await report.save();
+    res.json({ success: true, message: 'User reported successfully' });
+  } catch (error) {
+    console.error('Error reporting user:', error);
+    res.status(500).json({ error: 'Failed to report user' });
   }
 });
 

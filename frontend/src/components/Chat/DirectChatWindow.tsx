@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import { Send, Clock, Paperclip, Loader2 } from 'lucide-react';
+import { Send, Clock, Paperclip, Loader2, AlertTriangle } from 'lucide-react';
 import { useAuthStore } from '../../store/useAuthStore';
 
 interface DirectChatWindowProps {
@@ -117,6 +117,32 @@ export default function DirectChatWindow({ socket, currentUser, selectedUser }: 
     setInputText('');
   };
 
+  const handleReport = async () => {
+    if (!selectedUser || !currentUser) return;
+    try {
+      const backendUrl = import.meta.env.VITE_BACKEND_URL || 'http://localhost:5000';
+      const res = await fetch(`${backendUrl}/api/users/report`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${authState.accessToken}`
+        },
+        body: JSON.stringify({
+          reportedUserId: selectedUser.userId,
+          reason: 'Direct Chat Report'
+        })
+      });
+      if (res.ok) {
+        alert('User reported successfully. Thank you for keeping the community safe.');
+      } else {
+        alert('Failed to report user.');
+      }
+    } catch (e) {
+      console.error(e);
+      alert('Failed to report user.');
+    }
+  };
+
   const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
@@ -163,7 +189,7 @@ export default function DirectChatWindow({ socket, currentUser, selectedUser }: 
 
   if (!selectedUser) {
     return (
-      <div className="flex-1 flex flex-col items-center justify-center bg-[#15171B] border-l border-white/5 relative overflow-hidden">
+      <div className="flex-1 flex flex-col items-center justify-center bg-transparent border-l border-white/5 relative overflow-hidden">
         {/* Decorative background glow */}
         <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[500px] h-[500px] bg-white/5 rounded-full blur-[120px] pointer-events-none" />
         
@@ -187,7 +213,7 @@ export default function DirectChatWindow({ socket, currentUser, selectedUser }: 
   const myId = currentUser._id || currentUser.username;
 
   return (
-    <div className="flex-1 flex flex-col bg-[#15171B] border-l border-white/5 relative z-10 overflow-hidden">
+    <div className="flex-1 flex flex-col bg-transparent border-l border-white/5 relative z-10 overflow-hidden">
       {/* Header */}
       <div className="h-20 border-b border-white/5 flex items-center px-8 bg-[#0A0A0A] z-20 sticky top-0">
         <div className="relative">
@@ -206,15 +232,25 @@ export default function DirectChatWindow({ socket, currentUser, selectedUser }: 
           <h3 className="text-white font-medium text-base tracking-wide">{selectedUser.name || 'Anonymous'}</h3>
           <p className="text-zinc-500 text-xs mt-0.5">@{selectedUser.username}</p>
         </div>
-        <div className="ml-auto flex items-center gap-2 bg-[#131313] border border-white/10 px-4 py-2 rounded-full">
-          <Clock size={14} className="text-zinc-400" />
-          <span className="text-xs text-zinc-400 font-medium tracking-wide">Secure Session</span>
+        <div className="ml-auto flex items-center gap-3">
+          <div className="flex items-center gap-2 bg-[#131313] border border-white/10 px-4 py-2 rounded-full">
+            <Clock size={14} className="text-zinc-400" />
+            <span className="text-xs text-zinc-400 font-medium tracking-wide">Secure Session</span>
+          </div>
+          <button 
+            onClick={handleReport}
+            title="Report User"
+            className="w-9 h-9 flex items-center justify-center rounded-full bg-[#131313] border border-white/10 text-zinc-500 hover:text-orange-400 hover:bg-white/5 transition-all"
+          >
+            <AlertTriangle size={16} />
+          </button>
         </div>
       </div>
 
       {/* Messages */}
       <div 
         className="flex-1 overflow-y-auto p-8 space-y-6 relative scroll-smooth custom-scrollbar"
+        data-lenis-prevent
       >
         {messages.length === 0 ? (
            <div className="h-full flex flex-col items-center justify-center text-center">

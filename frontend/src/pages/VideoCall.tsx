@@ -299,6 +299,36 @@ export default function VideoCall() {
     navigate('/');
   };
 
+  const handleReport = async () => {
+    if (!peerData?.userId) {
+      alert('Cannot report anonymous user.');
+      return;
+    }
+    try {
+      const backendUrl = import.meta.env.VITE_BACKEND_URL || 'http://localhost:5000';
+      const authState = useAuthStore.getState();
+      const res = await fetch(`${backendUrl}/api/users/report`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          ...(authState.accessToken && { Authorization: `Bearer ${authState.accessToken}` })
+        },
+        body: JSON.stringify({
+          reportedUserId: peerData.userId,
+          reason: isAudioOnly ? 'Audio Call Report' : 'Video Call Report'
+        })
+      });
+      if (res.ok) {
+        alert('User reported successfully. Thank you for keeping the community safe.');
+      } else {
+        alert('Failed to report user. You may need to log in.');
+      }
+    } catch (e) {
+      console.error(e);
+      alert('Failed to report user.');
+    }
+  };
+
   const toggleMic = () => {
     const enabled = !isMicOn;
     setIsMicOn(enabled);
@@ -569,6 +599,7 @@ export default function VideoCall() {
 
         <motion.button
           whileTap={{ scale: 0.9 }}
+          onClick={handleReport}
           className="cursor-pointer p-3.5 rounded-full bg-zinc-800 hover:bg-zinc-700 transition-colors text-zinc-500 hover:text-orange-400"
           title="Report user"
         >

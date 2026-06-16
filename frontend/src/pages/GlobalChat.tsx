@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import Lenis from 'lenis';
 import { io, Socket } from 'socket.io-client';
-import { Users, Search } from 'lucide-react';
+import { Users, Search, Trash2 } from 'lucide-react';
 import { useAuthStore } from '../store/useAuthStore';
 import DirectChatWindow from '../components/Chat/DirectChatWindow';
 
@@ -12,6 +12,23 @@ export default function GlobalChat() {
   const [selectedUser, setSelectedUser] = useState<any | null>(null);
   const [unreadCounts, setUnreadCounts] = useState<{ [userId: string]: number }>({});
   const [searchTerm, setSearchTerm] = useState('');
+  const [hiddenUsers, setHiddenUsers] = useState<string[]>(() => {
+    try {
+      return JSON.parse(localStorage.getItem('vibelly_hidden_chats') || '[]');
+    } catch {
+      return [];
+    }
+  });
+
+  const handleHideUser = (e: React.MouseEvent, targetUserId: string) => {
+    e.stopPropagation();
+    const newHidden = [...hiddenUsers, targetUserId];
+    setHiddenUsers(newHidden);
+    localStorage.setItem('vibelly_hidden_chats', JSON.stringify(newHidden));
+    if (selectedUser?.userId === targetUserId) {
+      setSelectedUser(null);
+    }
+  };
   
   // Use ref to track selectedUser inside socket listener to avoid stale closures
   const selectedUserRef = useRef(selectedUser);
@@ -118,6 +135,7 @@ export default function GlobalChat() {
   }
 
   const filteredUsers = onlineUsers
+    .filter(u => !hiddenUsers.includes(u.userId))
     .filter(u => 
       u.name?.toLowerCase().includes(searchTerm.toLowerCase()) || 
       u.username?.toLowerCase().includes(searchTerm.toLowerCase())
@@ -182,7 +200,7 @@ export default function GlobalChat() {
                       setSelectedUser(u);
                       setUnreadCounts(prev => ({ ...prev, [u.userId]: 0 }));
                     }}
-                    className={`w-full flex items-center gap-4 p-3 rounded-xl transition-all duration-300 border ${
+                    className={`w-full flex items-center gap-4 p-3 rounded-xl transition-all duration-300 border group ${
                       selectedUser?.userId === u.userId 
                         ? 'bg-white/5 border-white/10' 
                         : 'border-transparent hover:bg-[#131313]'
@@ -210,6 +228,13 @@ export default function GlobalChat() {
                           {unreadCounts[u.userId]}
                         </div>
                       )}
+                      <div 
+                        onClick={(e) => handleHideUser(e, u.userId)}
+                        className="ml-2 p-1.5 rounded-full hover:bg-white/10 text-zinc-500 hover:text-red-400 transition-colors opacity-0 group-hover:opacity-100 shrink-0"
+                        title="Hide chat"
+                      >
+                        <Trash2 size={14} />
+                      </div>
                     </div>
                   </button>
                 ))
