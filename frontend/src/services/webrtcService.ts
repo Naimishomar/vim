@@ -64,7 +64,11 @@ class WebRTCService {
         video: videoEnabled
           ? { width: { ideal: idealWidth }, height: { ideal: idealHeight }, facingMode: 'user' }
           : false,
-        audio: true,
+        audio: {
+          echoCancellation: true,
+          noiseSuppression: true,
+          autoGainControl: true,
+        },
       });
       return { stream: this.localStream, error: null };
     } catch (err) {
