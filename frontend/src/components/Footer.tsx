@@ -12,10 +12,10 @@ export default function Footer() {
           <Link to="/" className="flex items-center gap-2 text-white font-bold text-base tracking-tight">
             <img 
               src="https://i.pinimg.com/736x/bf/f9/90/bff990bfc21bdc142b69c6ed28b53b6d.jpg" 
-              alt="Vibe Logo" 
+              alt="Vibelly Logo" 
               className="w-10 h-10 rounded-full object-cover shadow-lg shadow-black/50" 
             />
-            <span className='text-2xl font-serif font-black'>Vibe</span>
+            <span className='text-2xl font-serif font-black'>Vibelly</span>
           </Link>
           <p className="text-zinc-500 leading-relaxed max-w-xs">
             Connect instantly with verified users globally. Next-gen premium matching for real conversations.
@@ -51,7 +51,7 @@ export default function Footer() {
       </div>
 
       <div className="max-w-7xl mx-auto mt-12 pt-8 border-t border-white/5 flex flex-col md:flex-row items-center justify-between gap-4 text-zinc-500">
-        <p>© {new Date().getFullYear()} Vibe Inc. All rights reserved.</p>
+        <p>© {new Date().getFullYear()} Vibelly Inc. All rights reserved.</p>
         <div className="flex gap-4">
           <Link to="/terms" className="hover:text-white transition-colors">Privacy Policy</Link>
           <Link to="/terms" className="hover:text-white transition-colors">Terms of Service</Link>

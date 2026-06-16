@@ -414,7 +414,7 @@ export default function Home() {
               In a world of curated feeds and filtered connections, a random encounter with a stranger is not a distraction. It's a reminder that the world is bigger than your algorithm.
             </p>
             <p className="text-sm text-zinc-500 leading-relaxed max-w-xl mx-auto">
-              We built Vibe for the unscripted moment. The unexpected laugh.
+              We built Vibelly for the unscripted moment. The unexpected laugh.
               The conversation you didn't plan and couldn't forget.
               That's who we build for.
             </p>
@@ -605,7 +605,7 @@ export default function Home() {
             className="bg-white text-black rounded-2xl p-8 text-center"
           >
             <p className="text-base md:text-lg text-zinc-700 leading-relaxed max-w-2xl mx-auto">
-              Social algorithms know what you like. They keep showing you more of it. Vibe is the opposite —
+              Social algorithms know what you like. They keep showing you more of it. Vibelly is the opposite —
               the person on the other side is someone you'd never have found any other way.
               That's not a bug. <strong className="text-black">That's the feature.</strong>
             </p>
@@ -629,7 +629,7 @@ export default function Home() {
               Frequently Asked Questions
             </h2>
             <p className="text-zinc-500 text-sm">
-              Everything you need to know about Vibe's online video calling.
+              Everything you need to know about Vibelly's online video calling.
             </p>
           </motion.div>
 

@@ -38,7 +38,7 @@ export default function LoginModal({ isOpen, onClose }: LoginModalProps) {
 
             <div className="text-center mb-8">
               <h2 className="text-2xl font-semibold text-white mb-2" style={{ fontFamily: '"Playfair Display", Georgia, serif' }}>
-                Join Vibe
+                Join Vibelly
               </h2>
               <p className="text-zinc-400 text-sm">
                 Connect with the world. Sign in or create an account.

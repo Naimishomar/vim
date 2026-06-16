@@ -169,7 +169,7 @@ export default function DirectChatWindow({ socket, currentUser, selectedUser }: 
           <div className="w-20 h-20 bg-[#1A1A1A] rounded-full flex items-center justify-center mb-6 border border-white/10 shadow-inner">
             <Clock size={32} className="text-zinc-400 opacity-80" />
           </div>
-          <h2 className="text-2xl font-normal text-white mb-2" style={{ fontFamily: '"Playfair Display", Georgia, serif' }}>Vibe Direct</h2>
+          <h2 className="text-2xl font-normal text-white mb-2" style={{ fontFamily: '"Playfair Display", Georgia, serif' }}>Vibelly Direct</h2>
           <p className="text-zinc-500 text-sm mb-6 text-center max-w-[250px]">
             Select a user to start a secure, temporary conversation.
           </p>

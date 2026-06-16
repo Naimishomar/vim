@@ -101,8 +101,8 @@ export default function Pricing() {
         key: import.meta.env.VITE_RAZORPAY_KEY_ID, // Use Razorpay Key ID from env
         amount: orderData.amount,
         currency: orderData.currency,
-        name: 'Vibe Premium',
-        description: 'Upgrade to Vibe Premium',
+        name: 'Vibelly Premium',
+        description: 'Upgrade to Vibelly Premium',
         order_id: orderData.id,
         handler: async function (response: any) {
           const verifyData = {

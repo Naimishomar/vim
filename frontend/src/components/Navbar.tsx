@@ -45,10 +45,10 @@ export default function Navbar() {
         <Link to="/" className="flex items-center gap-2 text-white font-bold text-base tracking-tight">
           <img 
             src="https://i.pinimg.com/736x/bf/f9/90/bff990bfc21bdc142b69c6ed28b53b6d.jpg" 
-            alt="Vibe Logo" 
+            alt="Vibelly Logo" 
             className="w-12 h-12 rounded-full object-cover shadow-lg shadow-black/50" 
           />
-          <span className='text-2xl font-serif font-black'>Vibe</span>
+          <span className='text-2xl font-serif font-black'>Vibelly</span>
         </Link>
 
         {/* Nav Links */}
