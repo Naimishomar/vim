@@ -15,8 +15,13 @@ function parseMediaError(err: unknown): MediaErrorCode {
 
 export function attachStreamToVideo(video: HTMLVideoElement | null, stream: MediaStream | null) {
   if (!video || !stream) return;
-  video.srcObject = stream;
-  void video.play().catch(() => {});
+  // If the browser doesn't update dynamically when tracks are added, force a new MediaStream
+  if (video.srcObject === stream) {
+    video.srcObject = new MediaStream(stream.getTracks());
+  } else {
+    video.srcObject = stream;
+  }
+  void video.play().catch((e) => console.warn('Video play blocked by browser:', e));
 }
 
 class WebRTCService {
@@ -90,12 +95,10 @@ class WebRTCService {
       });
 
       this.peerConnection.ontrack = (event) => {
-        const stream = event.streams[0] ?? this.remoteStream!;
-        stream.getTracks().forEach((track) => {
-          if (!this.remoteStream!.getTracks().some((t) => t.id === track.id)) {
-            this.remoteStream!.addTrack(track);
-          }
-        });
+        const track = event.track;
+        if (!this.remoteStream!.getTracks().some((t) => t.id === track.id)) {
+          this.remoteStream!.addTrack(track);
+        }
         this.onRemoteStreamCallback?.(this.remoteStream!);
       };
 
