@@ -107,7 +107,7 @@ export default function Lobby() {
   };
 
   return (
-    <div className="min-h-screen bg-[#15171B] text-white flex flex-col font-sans relative overflow-hidden">
+    <div className="min-h-screen bg-[#15171B] text-white flex flex-col font-sans relative overflow-x-hidden">
       {/* ─── Dot Grid ─── */}
       <div
         className="absolute inset-0 z-0 pointer-events-none opacity-[0.10]"
