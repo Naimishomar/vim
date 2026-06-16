@@ -9,7 +9,7 @@ import { webrtcService, attachStreamToVideo, type MediaErrorCode } from '../serv
 import { socketService } from '../services/socketService';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuthStore } from '../store/useAuthStore';
-import GridScan from '../components/GridScan';
+import LightRays from '../components/LightRays';
 
 const MEDIA_ERROR_MESSAGES: Record<MediaErrorCode, string> = {
   'not-supported': 'Your browser does not support camera access. Try Chrome or Firefox on HTTPS/localhost.',
@@ -447,23 +447,20 @@ export default function VideoCall() {
                 className="flex flex-col items-center gap-6 relative w-full h-full justify-center"
               >
                 <div className="absolute inset-0 pointer-events-none z-0">
-                  <GridScan
-                    sensitivity={0.55}
-                    lineThickness={1}
-                    linesColor="#2F293A"
-                    gridScale={0.1}
-                    scanColor="#7b7b7bff"
-                    scanOpacity={0.4}
-                    enablePost
-                    bloomIntensity={0.6}
-                    chromaticAberration={0.002}
-                    noiseIntensity={0.01}
-                    lineJitter={0.1}
-                    scanGlow={0.6}
-                    scanSoftness={2.2}
-                    enableWebcam={false}
-                    showPreview={false}
+                  <LightRays
+                    raysOrigin="top-center"
+                    raysColor="#ffffff"
+                    raysSpeed={0.6}
+                    lightSpread={0.5}
+                    rayLength={3}
+                    followMouse={true}
+                    mouseInfluence={0.1}
+                    noiseAmount={0}
+                    distortion={0}
                     className="w-full h-full"
+                    pulsating={false}
+                    fadeDistance={1.3}
+                    saturation={1}
                   />
                 </div>
                 <div className="relative z-10 flex flex-col items-center">
