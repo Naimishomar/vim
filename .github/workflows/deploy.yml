@@ -20,7 +20,14 @@ jobs:
           username: ${{ secrets.EC2_USERNAME }}
           key: ${{ secrets.EC2_SSH_KEY }}
           script: |
+            mkdir -p ~/vibe
             cd ~/vibe
+            if [ ! -d ".git" ]; then
+              git init
+              git remote add origin https://github.com/Naimishomar/vim.git
+              git fetch
+              git checkout -t origin/main -f
+            fi
             git pull origin main
             
             # Build the Docker image
