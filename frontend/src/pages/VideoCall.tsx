@@ -9,6 +9,7 @@ import { webrtcService, attachStreamToVideo, type MediaErrorCode } from '../serv
 import { socketService } from '../services/socketService';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuthStore } from '../store/useAuthStore';
+import GridScan from '../components/GridScan';
 
 const MEDIA_ERROR_MESSAGES: Record<MediaErrorCode, string> = {
   'not-supported': 'Your browser does not support camera access. Try Chrome or Firefox on HTTPS/localhost.',
@@ -443,9 +444,29 @@ export default function VideoCall() {
               <motion.div
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
-                className="flex flex-col items-center gap-6"
+                className="flex flex-col items-center gap-6 relative w-full h-full justify-center"
               >
-                <div className="relative">
+                <div className="absolute inset-0 pointer-events-none z-0">
+                  <GridScan
+                    sensitivity={0.55}
+                    lineThickness={1}
+                    linesColor="#2F293A"
+                    gridScale={0.1}
+                    scanColor="#c6c6c6"
+                    scanOpacity={0.4}
+                    enablePost
+                    bloomIntensity={0.6}
+                    chromaticAberration={0.002}
+                    noiseIntensity={0.01}
+                    lineJitter={0.1}
+                    scanGlow={0.8}
+                    scanSoftness={2.6}
+                    enableWebcam={false}
+                    showPreview={false}
+                    className="w-full h-full"
+                  />
+                </div>
+                <div className="relative z-10 flex flex-col items-center">
                   {/* Outer wave 2 */}
                   <motion.div 
                     animate={{ 
