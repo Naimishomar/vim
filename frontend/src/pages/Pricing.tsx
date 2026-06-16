@@ -46,8 +46,9 @@ export default function Pricing() {
       return;
     }
     try {
+      const backendUrl = import.meta.env.PROD ? '' : (import.meta.env.VITE_BACKEND_URL || 'http://localhost:5000');
       let token = useAuthStore.getState().accessToken;
-      let orderRes = await fetch(`${import.meta.env.VITE_BACKEND_URL}/api/payment/create-order`, {
+      let orderRes = await fetch(`${backendUrl}/api/payment/create-order`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -59,7 +60,7 @@ export default function Pricing() {
       if (orderRes.status === 401) {
         const refreshToken = useAuthStore.getState().refreshToken;
         if (refreshToken) {
-          const refreshRes = await fetch(`${import.meta.env.VITE_BACKEND_URL}/api/auth/refresh`, {
+          const refreshRes = await fetch(`${backendUrl}/api/auth/refresh`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ refreshToken })
@@ -68,7 +69,7 @@ export default function Pricing() {
             const data = await refreshRes.json();
             useAuthStore.getState().setAuth(user!, data.accessToken, data.refreshToken);
             token = data.accessToken;
-            orderRes = await fetch(`${import.meta.env.VITE_BACKEND_URL}/api/payment/create-order`, {
+            orderRes = await fetch(`${backendUrl}/api/payment/create-order`, {
               method: 'POST',
               headers: {
                 'Content-Type': 'application/json',
@@ -110,7 +111,7 @@ export default function Pricing() {
             razorpay_signature: response.razorpay_signature,
           };
 
-          const verifyRes = await fetch(`${import.meta.env.VITE_BACKEND_URL}/api/payment/verify`, {
+          const verifyRes = await fetch(`${backendUrl}/api/payment/verify`, {
             method: 'POST',
             headers: {
               'Content-Type': 'application/json',

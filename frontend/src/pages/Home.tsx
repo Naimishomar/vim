@@ -3,7 +3,7 @@ import { motion } from 'framer-motion';
 import { useState } from 'react';
 import {
   Video, Headphones, ArrowRight, Shield,
-  Zap, MessageSquare, SkipForward, Globe, Check
+  Zap, MessageSquare, SkipForward, Globe, Check, ChevronDown
 } from 'lucide-react';
 import Navbar from '../components/Navbar';
 import Footer from '../components/Footer';
@@ -111,6 +111,49 @@ const metrics = [
     body: 'Video or voice, guest or returning user — everyone gets the same low-latency, high-quality experience. No tiers, no paywalls.',
   },
 ];
+
+const faqs = [
+  {
+    question: 'Is Vibe a free alternative to Omegle and OmeTV?',
+    answer: 'Yes! Vibe is completely free to use. It is designed as the ultimate modern alternative to Omegle, OmeTV, and Chatroulette, allowing you to meet strangers online via high-quality random video calling without any registration.'
+  },
+  {
+    question: 'How do I talk to strangers online safely?',
+    answer: 'Simply click "Start Video Call" and you will be instantly matched with a random stranger. We prioritize your privacy—all chats are ephemeral, end-to-end encrypted, and no personal data is stored once you skip or end the call.'
+  },
+  {
+    question: 'Is this random video chat app truly anonymous?',
+    answer: 'Absolutely. Unlike OmeTV which requires social logins, Vibe is 100% anonymous. You do not need to create a profile, give your email, or download any app. Just open your browser and start chatting.'
+  },
+  {
+    question: 'Can I choose who I match with?',
+    answer: 'Yes! While basic random video chat is completely free, we offer premium features allowing you to filter your matches by gender (Opposite Gender or Same Gender) or specific countries for a highly tailored matchmaking experience.'
+  }
+];
+
+function FAQItem({ question, answer, isLast }: { question: string, answer: string, isLast?: boolean }) {
+  const [isOpen, setIsOpen] = useState(false);
+  return (
+    <div className={`py-5 px-4 ${isLast ? '' : 'border-b border-white/10'}`}>
+      <button 
+        onClick={() => setIsOpen(!isOpen)}
+        className="flex w-full justify-between items-center text-left text-white font-medium focus:outline-none hover:text-zinc-300 transition-colors"
+      >
+        <span className="text-base md:text-lg pr-4">{question}</span>
+        <ChevronDown className={`w-5 h-5 shrink-0 transition-transform ${isOpen ? 'rotate-180 text-white' : 'text-zinc-500'}`} />
+      </button>
+      {isOpen && (
+        <motion.div 
+          initial={{ opacity: 0, height: 0 }}
+          animate={{ opacity: 1, height: 'auto' }}
+          className="pt-3 text-zinc-400 text-sm md:text-base leading-relaxed"
+        >
+          {answer}
+        </motion.div>
+      )}
+    </div>
+  );
+}
 
 /* ─── Component ─── */
 export default function Home() {
@@ -568,6 +611,34 @@ export default function Home() {
               That's not a bug. <strong className="text-black">That's the feature.</strong>
             </p>
           </motion.div>
+        </section>
+
+        {/* ══════════════════════════════════════════
+            SECTION 5.5 — FAQ (SEO)
+        ══════════════════════════════════════════ */}
+        <section className="px-6 pb-28 max-w-3xl mx-auto w-full">
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            className="mb-10 text-center"
+          >
+            <h2
+              className="text-3xl md:text-4xl font-semibold mb-4"
+              style={{ fontFamily: 'Georgia, serif' }}
+            >
+              Frequently Asked Questions
+            </h2>
+            <p className="text-zinc-500 text-sm">
+              Everything you need to know about Vibe's online video calling.
+            </p>
+          </motion.div>
+
+          <div className="flex flex-col bg-zinc-900/60 border border-white/10 rounded-2xl shadow-xl overflow-hidden">
+            {faqs.map((faq, idx) => (
+              <FAQItem key={idx} question={faq.question} answer={faq.answer} isLast={idx === faqs.length - 1} />
+            ))}
+          </div>
         </section>
 
         {/* ══════════════════════════════════════════

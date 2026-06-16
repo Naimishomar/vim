@@ -76,7 +76,7 @@ export default function OnboardingModal() {
     setError(null);
     try {
       let token = localStorage.getItem('vibe_token') || useAuthStore.getState().accessToken;
-      const backendUrl = import.meta.env.VITE_BACKEND_URL || 'http://localhost:5000';
+      const backendUrl = import.meta.env.PROD ? '' : (import.meta.env.VITE_BACKEND_URL || 'http://localhost:5000');
       let res = await fetch(`${backendUrl}/api/users/profile`, {
         method: 'PUT',
         headers: {

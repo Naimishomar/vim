@@ -20,11 +20,6 @@ jobs:
           username: ${{ secrets.EC2_USERNAME }}
           key: ${{ secrets.EC2_SSH_KEY }}
           script: |
-            # If the vibe directory doesn't exist, clone it first
-            if [ ! -d "~/vibe" ]; then
-              git clone https://github.com/${{ github.repository }}.git ~/vibe
-            fi
-            
             cd ~/vibe
             git pull origin main
             
