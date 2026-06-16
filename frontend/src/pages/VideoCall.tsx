@@ -97,7 +97,8 @@ export default function VideoCall() {
         data.peerSocketId,
         !isAudioOnly,
         onRemoteStream,
-        resolution
+        resolution,
+        data.isInitiator
       );
 
       if (!ok && !mediaError) {
@@ -107,8 +108,16 @@ export default function VideoCall() {
       attachStreamToVideo(localVideoRef.current, webrtcService.localStream);
     };
 
-    const onReceiveTracks = async (data: { peerSocketId: string; tracks: string[]; sessionId: string }) => {
-      await webrtcService.pullTracks(data.sessionId, data.tracks);
+    const onOffer = async (data: { offer: RTCSessionDescriptionInit }) => {
+      await webrtcService.handleOffer(data.offer);
+    };
+
+    const onAnswer = async (data: { answer: RTCSessionDescriptionInit }) => {
+      await webrtcService.handleAnswer(data.answer);
+    };
+
+    const onIceCandidate = async (data: { candidate: RTCIceCandidateInit }) => {
+      await webrtcService.handleIceCandidate(data.candidate);
     };
 
     const onPartnerDisconnected = () => {
@@ -127,7 +136,9 @@ export default function VideoCall() {
     };
 
     socketService.on('match-found', onMatchFound);
-    socketService.on('receive-tracks', onReceiveTracks);
+    socketService.on('webrtc-offer', onOffer);
+    socketService.on('webrtc-answer', onAnswer);
+    socketService.on('webrtc-ice-candidate', onIceCandidate);
     socketService.on('partner-disconnected', onPartnerDisconnected);
     socketService.on('receive-message', onReceiveMessage);
     socketService.on('typing', onTyping);
@@ -137,7 +148,9 @@ export default function VideoCall() {
 
     return () => {
       socketService.off('match-found', onMatchFound);
-      socketService.off('receive-tracks', onReceiveTracks);
+      socketService.off('webrtc-offer', onOffer);
+      socketService.off('webrtc-answer', onAnswer);
+      socketService.off('webrtc-ice-candidate', onIceCandidate);
       socketService.off('partner-disconnected', onPartnerDisconnected);
       socketService.off('receive-message', onReceiveMessage);
       socketService.off('typing', onTyping);
