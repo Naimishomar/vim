@@ -29,6 +29,11 @@ app.use('/api/webrtc', webrtcRoutes);
 app.use('/api/payment', paymentRoutes);
 app.use('/api/users', userRoutes);
 
+
+app.get("/", (req,res)=>{
+  res.send("Vibe server never gets down🚀🚀");
+})
+
 // ─── Database Connection ───
 export const connectDB = async () => {
   try {
