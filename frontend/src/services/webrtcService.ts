@@ -2,7 +2,6 @@ import { socketService } from './socketService';
 
 export type MediaErrorCode = 'not-supported' | 'permission-denied' | 'not-found' | 'in-use' | 'unknown';
 
-const BACKEND_URL = import.meta.env.VITE_BACKEND_URL || 'http://localhost:5000';
 
 function parseMediaError(err: unknown): MediaErrorCode {
   if (err instanceof DOMException) {
