@@ -9,6 +9,9 @@ import authRoutes from './routes/auth.routes';
 import webrtcRoutes from './routes/webrtc.routes';
 import paymentRoutes from './routes/payment.routes';
 import userRoutes from './routes/user.routes';
+import oauthRoutes from './routes/oauth.routes';
+import uploadRoutes from './routes/upload.routes';
+import passport from './config/passport';
 import path from 'path';
 
 const app = express();
@@ -22,12 +25,15 @@ const corsOptions = {
 
 app.use(cors(corsOptions));
 app.use(express.json());
+app.use(passport.initialize());
 
 // Routes
 app.use('/api/auth', authRoutes);
 app.use('/api/webrtc', webrtcRoutes);
 app.use('/api/payment', paymentRoutes);
 app.use('/api/users', userRoutes);
+app.use('/api/oauth', oauthRoutes);
+app.use('/api/upload', uploadRoutes);
 
 
 app.get("/", (req,res)=>{

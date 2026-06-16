@@ -134,7 +134,7 @@ export default function Navbar() {
               </button>
               <button
                 onClick={() => setIsLoginModalOpen(true)}
-                className="bg-white text-black px-5 py-2 rounded-xl font-medium hover:bg-red-500 hover:text-white transition-colors text-[14px] cursor-pointer"
+                className="bg-white text-black px-5 py-2 rounded-xl font-medium hover:bg-white/80 hover:text-black transition-colors text-[14px] cursor-pointer"
               >
                 Sign Up
               </button>
