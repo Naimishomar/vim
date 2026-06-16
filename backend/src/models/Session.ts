@@ -2,8 +2,8 @@ import mongoose, { Document, Schema } from 'mongoose';
 
 export interface ISession extends Document {
   roomId: string;
-  user1: mongoose.Types.ObjectId;
-  user2: mongoose.Types.ObjectId;
+  user1: string;
+  user2: string;
   callType: 'video' | 'audio' | 'chat';
   quality: string;
   startedAt: Date;
@@ -13,8 +13,8 @@ export interface ISession extends Document {
 
 const SessionSchema: Schema = new Schema({
   roomId: { type: String, required: true, unique: true },
-  user1: { type: Schema.Types.ObjectId, ref: 'User', required: true },
-  user2: { type: Schema.Types.ObjectId, ref: 'User', required: true },
+  user1: { type: String, required: true },
+  user2: { type: String, required: true },
   callType: { type: String, enum: ['video', 'audio', 'chat'], required: true },
   quality: { type: String, default: '480p' },
   startedAt: { type: Date, default: Date.now },

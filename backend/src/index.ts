@@ -2,6 +2,7 @@ import { httpServer, connectDB, connectRedis } from './server';
 import { ENV } from './config/env';
 
 // Import socket handlers
+import './socket/presence';
 import './socket/matchmaking';
 import './socket/webrtc';
 import './socket/chat';

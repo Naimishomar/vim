@@ -1,10 +1,11 @@
 import { Router } from 'express';
-import { getCloudflareSession } from '../controllers/webrtc.controller';
+import { createCloudflareSession, createCloudflareTrack } from '../controllers/webrtc.controller';
 import { requireAuth } from '../middlewares/auth.middleware';
 
 const router = Router();
 
 // Retrieve Cloudflare Realtime session token
-router.get('/session', getCloudflareSession); // Open for development mockup
+router.post('/sessions/new', createCloudflareSession);
+router.post('/sessions/:sessionId/tracks/new', createCloudflareTrack);
 
 export default router;

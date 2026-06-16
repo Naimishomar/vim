@@ -1,0 +1,40 @@
+name: Deploy to EC2
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v3
+
+      - name: Deploy via SSH
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.EC2_HOST }}
+          username: ${{ secrets.EC2_USERNAME }}
+          key: ${{ secrets.EC2_SSH_KEY }}
+          script: |
+            # If the vibe directory doesn't exist, clone it first
+            if [ ! -d "~/vibe" ]; then
+              git clone https://github.com/${{ github.repository }}.git ~/vibe
+            fi
+            
+            cd ~/vibe
+            git pull origin main
+            
+            # Build the Docker image
+            docker build -t vibe-app .
+            
+            # Stop and remove the existing container if it exists
+            docker stop vibe-app || true
+            docker rm vibe-app || true
+            
+            # Run the new container, passing the .env file located securely on the server
+            # We map port 5000 of the container to port 5000 on the host
+            docker run -d --name vibe-app --restart always -p 5000:5000 --env-file backend/.env vibe-app

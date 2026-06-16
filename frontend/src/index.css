@@ -77,3 +77,7 @@
 .mirror {
   transform: scaleX(-1);
 }
+
+button{
+  cursor: pointer;
+}

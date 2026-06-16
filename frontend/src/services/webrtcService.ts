@@ -1,16 +1,14 @@
 import { socketService } from './socketService';
 
-export type MediaErrorCode = 'not-supported' | 'permission-denied' | 'not-found' | 'unknown';
+export type MediaErrorCode = 'not-supported' | 'permission-denied' | 'not-found' | 'in-use' | 'unknown';
 
-const ICE_SERVERS: RTCIceServer[] = [
-  { urls: 'stun:stun.cloudflare.com:3478' },
-  { urls: 'stun:stun.l.google.com:19302' },
-];
+const BACKEND_URL = import.meta.env.VITE_BACKEND_URL || 'http://localhost:5000';
 
 function parseMediaError(err: unknown): MediaErrorCode {
   if (err instanceof DOMException) {
     if (err.name === 'NotAllowedError' || err.name === 'PermissionDeniedError') return 'permission-denied';
     if (err.name === 'NotFoundError' || err.name === 'DevicesNotFoundError') return 'not-found';
+    if (err.name === 'NotReadableError' || err.name === 'TrackStartError') return 'in-use';
   }
   return 'unknown';
 }
@@ -26,15 +24,15 @@ class WebRTCService {
   public localStream: MediaStream | null = null;
   public remoteStream: MediaStream | null = null;
 
+  public cfSessionId: string | null = null;
   private peerSocketId: string | null = null;
-  private pendingCandidates: RTCIceCandidateInit[] = [];
-  private remoteDescriptionSet = false;
+  private onRemoteStreamCallback: ((stream: MediaStream) => void) | null = null;
 
   isMediaSupported(): boolean {
     return !!(navigator.mediaDevices?.getUserMedia);
   }
 
-  async startLocalStream(videoEnabled: boolean): Promise<{ stream: MediaStream | null; error: MediaErrorCode | null }> {
+  async startLocalStream(videoEnabled: boolean, resolution: '480' | '720' | '1080' = '480'): Promise<{ stream: MediaStream | null; error: MediaErrorCode | null }> {
     if (!this.isMediaSupported()) {
       return { stream: null, error: 'not-supported' };
     }
@@ -44,10 +42,20 @@ class WebRTCService {
       this.localStream = null;
     }
 
+    let idealWidth = 640;
+    let idealHeight = 480;
+    if (resolution === '720') {
+      idealWidth = 1280;
+      idealHeight = 720;
+    } else if (resolution === '1080') {
+      idealWidth = 1920;
+      idealHeight = 1080;
+    }
+
     try {
       this.localStream = await navigator.mediaDevices.getUserMedia({
         video: videoEnabled
-          ? { width: { ideal: 640 }, height: { ideal: 480 }, facingMode: 'user' }
+          ? { width: { ideal: idealWidth }, height: { ideal: idealHeight }, facingMode: 'user' }
           : false,
         audio: true,
       });
@@ -59,132 +67,184 @@ class WebRTCService {
   }
 
   async initialize(
-    isInitiator: boolean,
     peerSocketId: string,
     videoEnabled: boolean,
     onRemoteStream: (stream: MediaStream) => void,
-  ): Promise<boolean> {
+    resolution: '480' | '720' | '1080' = '480'
+  ): Promise<{ ok: boolean; error?: string }> {
     try {
       this.peerSocketId = peerSocketId;
+      this.onRemoteStreamCallback = onRemoteStream;
 
       if (!this.localStream) {
-        const { stream, error } = await this.startLocalStream(videoEnabled);
+        const { stream, error } = await this.startLocalStream(videoEnabled, resolution);
         if (!stream) {
           console.error('Failed to start local stream:', error);
-          return false;
+          return { ok: false, error: error || 'unknown' };
         }
       }
 
-      // Initiator creates the peer connection and sends an offer.
-      // Non-initiator waits for handleOffer to set up the connection.
-      if (isInitiator) {
-        this.setupPeerConnection(onRemoteStream);
-        await this.createAndSendOffer();
+      this.remoteStream = new MediaStream();
+      this.peerConnection = new RTCPeerConnection({
+        iceServers: [{ urls: 'stun:stun.cloudflare.com:3478' }] // CF handles ICE
+      });
+
+      this.peerConnection.ontrack = (event) => {
+        const stream = event.streams[0] ?? this.remoteStream!;
+        stream.getTracks().forEach((track) => {
+          if (!this.remoteStream!.getTracks().some((t) => t.id === track.id)) {
+            this.remoteStream!.addTrack(track);
+          }
+        });
+        this.onRemoteStreamCallback?.(this.remoteStream!);
+      };
+
+      const tracksPayload: any[] = [];
+      const transceivers: any[] = [];
+
+      if (this.localStream) {
+        for (const track of this.localStream.getTracks()) {
+          const tc = this.peerConnection.addTransceiver(track, { direction: 'sendonly' });
+          transceivers.push({ tc, track });
+        }
+      } else {
+        // Fallback: add empty transceivers to generate valid SDP if no local media is available yet
+        this.peerConnection.addTransceiver('video', { direction: 'recvonly' });
+        this.peerConnection.addTransceiver('audio', { direction: 'recvonly' });
       }
 
-      return true;
+      // Create Cloudflare Session
+      const currentPc = this.peerConnection;
+      const offer = await currentPc.createOffer();
+      if (this.peerConnection !== currentPc) return { ok: false, error: 'Connection changed' };
+      await currentPc.setLocalDescription(offer);
+      if (this.peerConnection !== currentPc) return { ok: false, error: 'Connection changed' };
+
+      const res = await fetch(`${BACKEND_URL}/api/webrtc/sessions/new`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ sessionDescription: {
+          type: offer.type,
+          sdp: offer.sdp
+        }})
+      });
+
+      if (!res.ok) {
+        const text = await res.text();
+        console.error('Failed to create CF session', text);
+        return { ok: false, error: 'CF_API_ERROR: ' + text };
+      }
+
+      const data = await res.json();
+      this.cfSessionId = data.sessionId;
+      
+      if (this.peerConnection !== currentPc) return { ok: false, error: 'Peer connection closed' };
+      
+      await currentPc.setRemoteDescription(new RTCSessionDescription(data.sessionDescription));
+
+      // If we added actual local tracks, we must push them to Cloudflare using tracks/new
+      if (this.localStream && transceivers.length > 0) {
+        for (const { tc, track } of transceivers) {
+          tracksPayload.push({
+            location: 'local',
+            mid: tc.mid,
+            trackName: `vibe-${socketService.socket?.id}-${track.kind}`
+          });
+        }
+
+        const trackRes = await fetch(`${BACKEND_URL}/api/webrtc/sessions/${this.cfSessionId}/tracks/new`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            sessionDescription: {
+              type: offer.type,
+              sdp: offer.sdp
+            },
+            tracks: tracksPayload
+          })
+        });
+
+        if (this.peerConnection !== currentPc) return { ok: false, error: 'Connection changed' };
+
+        if (!trackRes.ok) {
+          const text = await trackRes.text();
+          console.error('Failed to push tracks', text);
+          return { ok: false, error: 'CF_TRACKS_ERROR: ' + text };
+        } else {
+          // We used the exact same SDP offer as sessions/new, so we are already in 'stable' state.
+          // Cloudflare's answer is identical to the one we already applied, so no need to setRemoteDescription here.
+          
+          // Share tracks with peer in a single batch
+          socketService.emit('share-tracks', {
+            peerSocketId: this.peerSocketId,
+            sessionId: this.cfSessionId,
+            tracks: tracksPayload.map(t => t.trackName)
+          });
+        }
+      }
+
+      return { ok: true };
     } catch (error) {
       console.error('WebRTC initialization error:', error);
-      return false;
+      return { ok: false, error: error instanceof Error ? error.message : String(error) };
     }
   }
 
-  private setupPeerConnection(onRemoteStream: (stream: MediaStream) => void) {
-    this.endPeerConnection();
+  async pullTracks(peerCfSessionId: string, trackNames: string[]) {
+    const currentPc = this.peerConnection;
+    if (!currentPc || !this.cfSessionId) return;
 
-    this.peerConnection = new RTCPeerConnection({ iceServers: ICE_SERVERS });
-    this.remoteStream = new MediaStream();
-    this.pendingCandidates = [];
-    this.remoteDescriptionSet = false;
+    const tracksPayload: any[] = [];
 
-    this.localStream?.getTracks().forEach((track) => {
-      this.peerConnection!.addTrack(track, this.localStream!);
-    });
-
-    this.peerConnection.ontrack = (event) => {
-      const stream = event.streams[0] ?? this.remoteStream!;
-      stream.getTracks().forEach((track) => {
-        if (!this.remoteStream!.getTracks().some((t) => t.id === track.id)) {
-          this.remoteStream!.addTrack(track);
-        }
+    for (const trackName of trackNames) {
+      const kind = trackName.includes('video') ? 'video' : 'audio';
+      const tc = currentPc.addTransceiver(kind, { direction: 'recvonly' });
+      tracksPayload.push({
+        location: 'remote',
+        sessionId: peerCfSessionId,
+        trackName: trackName,
+        // Wait until we have mid after setLocalDescription
+        tc: tc
       });
-      onRemoteStream(this.remoteStream!);
-    };
+    }
 
-    this.peerConnection.onicecandidate = (event) => {
-      if (event.candidate && this.peerSocketId) {
-        socketService.emit('webrtc-ice-candidate', {
-          peerSocketId: this.peerSocketId,
-          candidate: event.candidate.toJSON(),
-        });
-      }
-    };
-  }
+    const offer = await currentPc.createOffer();
+    if (this.peerConnection !== currentPc) return;
+    await currentPc.setLocalDescription(offer);
+    if (this.peerConnection !== currentPc) return;
 
-  private async createAndSendOffer() {
-    if (!this.peerConnection || !this.peerSocketId) return;
-
-    const offer = await this.peerConnection.createOffer();
-    await this.peerConnection.setLocalDescription(offer);
-    socketService.emit('webrtc-offer', {
-      peerSocketId: this.peerSocketId,
-      offer: this.peerConnection.localDescription,
+    const res = await fetch(`${BACKEND_URL}/api/webrtc/sessions/${this.cfSessionId}/tracks/new`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        sessionDescription: {
+          type: offer.type,
+          sdp: offer.sdp
+        },
+        tracks: tracksPayload.map(t => ({
+          location: t.location,
+          sessionId: t.sessionId,
+          trackName: t.trackName,
+          mid: t.tc.mid
+        }))
+      })
     });
-  }
 
-  private async flushPendingCandidates() {
-    if (!this.peerConnection || !this.remoteDescriptionSet) return;
+    if (this.peerConnection !== currentPc) return;
 
-    for (const candidate of this.pendingCandidates) {
-      await this.peerConnection.addIceCandidate(new RTCIceCandidate(candidate));
-    }
-    this.pendingCandidates = [];
-  }
-
-  async handleOffer(offer: RTCSessionDescriptionInit, peerSocketId: string, onRemoteStream: (stream: MediaStream) => void) {
-    if (!this.localStream) {
-      const { stream } = await this.startLocalStream(true);
-      if (!stream) return;
+    if (!res.ok) {
+      console.error('Failed to pull tracks', await res.text());
+      return;
     }
 
-    if (!this.peerConnection) {
-      this.peerSocketId = peerSocketId;
-      this.setupPeerConnection(onRemoteStream);
-    }
-
-    if (!this.peerConnection) return;
-
-    await this.peerConnection.setRemoteDescription(new RTCSessionDescription(offer));
-    this.remoteDescriptionSet = true;
-    await this.flushPendingCandidates();
-
-    const answer = await this.peerConnection.createAnswer();
-    await this.peerConnection.setLocalDescription(answer);
-    socketService.emit('webrtc-answer', {
-      peerSocketId,
-      answer: this.peerConnection.localDescription,
-    });
-  }
-
-  async handleAnswer(answer: RTCSessionDescriptionInit) {
-    if (!this.peerConnection) return;
-
-    await this.peerConnection.setRemoteDescription(new RTCSessionDescription(answer));
-    this.remoteDescriptionSet = true;
-    await this.flushPendingCandidates();
-  }
-
-  async handleIceCandidate(candidate: RTCIceCandidateInit) {
-    if (!this.peerConnection) return;
-
-    if (this.remoteDescriptionSet) {
-      await this.peerConnection.addIceCandidate(new RTCIceCandidate(candidate));
-    } else {
-      this.pendingCandidates.push(candidate);
+    const data = await res.json();
+    if (this.peerConnection !== currentPc) return;
+    if (data.sessionDescription) {
+      await currentPc.setRemoteDescription(new RTCSessionDescription(data.sessionDescription));
     }
   }
 
-  async setVideoEnabled(enabled: boolean): Promise<boolean> {
+  async setVideoEnabled(enabled: boolean, resolution: '480' | '720' | '1080' = '480'): Promise<boolean> {
     if (!this.localStream) return false;
 
     const videoTracks = this.localStream.getVideoTracks();
@@ -195,12 +255,60 @@ class WebRTCService {
       }
 
       try {
+        let idealWidth = 640;
+        let idealHeight = 480;
+        if (resolution === '720') {
+          idealWidth = 1280;
+          idealHeight = 720;
+        } else if (resolution === '1080') {
+          idealWidth = 1920;
+          idealHeight = 1080;
+        }
+
         const videoStream = await navigator.mediaDevices.getUserMedia({
-          video: { width: { ideal: 640 }, height: { ideal: 480 }, facingMode: 'user' },
+          video: { width: { ideal: idealWidth }, height: { ideal: idealHeight }, facingMode: 'user' },
         });
         const videoTrack = videoStream.getVideoTracks()[0];
         this.localStream.addTrack(videoTrack);
-        this.peerConnection?.addTrack(videoTrack, this.localStream);
+        
+        // Push the new track manually
+        const currentPc = this.peerConnection;
+        if (currentPc && this.cfSessionId) {
+          const tc = currentPc.addTransceiver(videoTrack, { direction: 'sendonly' });
+          const offer = await currentPc.createOffer();
+          if (this.peerConnection !== currentPc) return false;
+          await currentPc.setLocalDescription(offer);
+          if (this.peerConnection !== currentPc) return false;
+          
+          const trackName = `vibe-${socketService.socket?.id}-${videoTrack.kind}`;
+          const trackRes = await fetch(`${BACKEND_URL}/api/webrtc/sessions/${this.cfSessionId}/tracks/new`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              sessionDescription: {
+                type: offer.type,
+                sdp: offer.sdp
+              },
+              tracks: [{ location: 'local', mid: tc.mid, trackName }]
+            })
+          });
+          
+          if (this.peerConnection !== currentPc) return false;
+
+          if (trackRes.ok) {
+            const trackData = await trackRes.json();
+            if (this.peerConnection !== currentPc) return false;
+            if (trackData.sessionDescription) {
+              await currentPc.setRemoteDescription(new RTCSessionDescription(trackData.sessionDescription));
+            }
+            socketService.emit('share-tracks', {
+              peerSocketId: this.peerSocketId,
+              sessionId: this.cfSessionId,
+              tracks: [trackName]
+            });
+          }
+        }
+        
         return true;
       } catch (err) {
         console.error('Failed to re-enable camera:', err);
@@ -219,8 +327,8 @@ class WebRTCService {
     }
     this.remoteStream = null;
     this.peerSocketId = null;
-    this.pendingCandidates = [];
-    this.remoteDescriptionSet = false;
+    this.cfSessionId = null;
+    this.onRemoteStreamCallback = null;
   }
 
   endCall() {

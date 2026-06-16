@@ -1,47 +1,150 @@
-import { Link, useNavigate } from 'react-router-dom';
-import { motion } from 'framer-motion';
-import { Video, Headphones, Zap } from 'lucide-react';
+import { Link } from 'react-router-dom';
+import { LogOut, User, Camera, Settings } from 'lucide-react';
+import { useState, useRef, useEffect } from 'react';
+import { useAuthStore } from '../store/useAuthStore';
+import LoginModal from './LoginModal';
+import SettingsModal from './SettingsModal';
+import { useNavigate } from 'react-router-dom';
 
 export default function Navbar() {
+  const [isLoginModalOpen, setIsLoginModalOpen] = useState(false);
+  const [isSettingsModalOpen, setIsSettingsModalOpen] = useState(false);
+  const [dropdownOpen, setDropdownOpen] = useState(false);
+  const dropdownRef = useRef<HTMLDivElement>(null);
+  
+  const { user, isAuthenticated, logout } = useAuthStore();
   const navigate = useNavigate();
 
+  const handleLogout = () => {
+    logout();
+    setDropdownOpen(false);
+  };
+
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+        setDropdownOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
+  const handleProtectedAction = (path: string) => {
+    if (!isAuthenticated) {
+      setIsLoginModalOpen(true);
+    } else {
+      navigate(path);
+    }
+  };
+
   return (
-    <nav className="flex items-center justify-between py-4 px-6 max-w-7xl mx-auto w-full text-sm text-zinc-400">
-      {/* Logo */}
-      <Link to="/" className="flex items-center gap-2 text-white font-bold text-base tracking-tight">
-        <div className="w-7 h-7 rounded-lg bg-violet-600 flex items-center justify-center shadow-lg shadow-violet-600/30">
-          <Zap size={15} className="text-white" fill="white" />
+    <>
+      <nav className="flex items-center justify-between py-4 px-6 max-w-7xl mx-auto w-full text-sm text-zinc-400 relative z-50">
+        {/* Logo */}
+        <Link to="/" className="flex items-center gap-2 text-white font-bold text-base tracking-tight">
+          <img 
+            src="https://i.pinimg.com/736x/bf/f9/90/bff990bfc21bdc142b69c6ed28b53b6d.jpg" 
+            alt="Vibe Logo" 
+            className="w-12 h-12 rounded-full object-cover shadow-lg shadow-black/50" 
+          />
+          <span className='text-2xl font-serif font-black'>Vibe</span>
+        </Link>
+
+        {/* Nav Links */}
+        <div className="hidden md:flex items-center gap-2">
+          <Link to="/" className="px-3 py-1.5 rounded-lg hover:bg-zinc-800 hover:text-white transition-colors">Home</Link>
+          <button onClick={() => handleProtectedAction('/chat')} className="px-3 py-1.5 rounded-lg hover:bg-zinc-800 hover:text-white transition-colors text-left cursor-pointer">Chat</button>
+          <button onClick={() => handleProtectedAction('/setup/video')} className="px-3 py-1.5 rounded-lg hover:bg-zinc-800 hover:text-white transition-colors text-left cursor-pointer">Video Call</button>
+          <button onClick={() => handleProtectedAction('/setup/audio')} className="px-3 py-1.5 rounded-lg hover:bg-zinc-800 hover:text-white transition-colors text-left cursor-pointer">Audio Call</button>
+          <Link to="/pricing" className="px-3 py-1.5 rounded-lg hover:bg-zinc-800 hover:text-white transition-colors">Pricing</Link>
         </div>
-        <span>Vibe</span>
-      </Link>
 
-      {/* Nav Links */}
-      <div className="hidden md:flex items-center gap-6">
-        <Link to="/" className="hover:text-white transition-colors">Home</Link>
-        <Link to="/mcp" className="hover:text-white transition-colors">MCP Registry</Link>
-      </div>
+        {/* CTAs / User */}
+        <div className="flex items-center gap-4">
+          {isAuthenticated && user ? (
+            <div className="flex items-center gap-4">
+              
+              <div className="relative" ref={dropdownRef}>
+                <button 
+                  onClick={() => setDropdownOpen(!dropdownOpen)}
+                  className={`w-10 h-10 rounded-full bg-zinc-800 flex items-center justify-center hover:opacity-80 transition-all cursor-pointer ${
+                    user?.premiumStatus 
+                      ? 'p-[2px] bg-gradient-to-tr from-zinc-500 via-white to-zinc-300 shadow-[0_0_12px_rgba(255,255,255,0.4)]' 
+                      : 'border border-white/10 hover:border-white/30 overflow-hidden'
+                  }`}
+                >
+                  {user?.premiumStatus ? (
+                    <div className="w-full h-full rounded-full bg-[#15171B] flex items-center justify-center p-[2px]">
+                      {user?.profileImage ? (
+                        <img src={user.profileImage} alt="Profile" className="w-full h-full object-cover rounded-full" />
+                      ) : (
+                        <User className="text-white w-4 h-4" />
+                      )}
+                    </div>
+                  ) : (
+                    <>
+                      {user?.profileImage ? (
+                        <img src={user.profileImage} alt="Profile" className="w-full h-full object-cover" />
+                      ) : (
+                        <User className="text-white w-5 h-5" />
+                      )}
+                    </>
+                  )}
+                </button>
 
-      {/* CTAs */}
-      <div className="flex items-center gap-3">
-        <motion.button
-          whileHover={{ scale: 1.04 }}
-          whileTap={{ scale: 0.96 }}
-          onClick={() => navigate('/call/audio')}
-          className="hidden sm:flex items-center gap-1.5 text-zinc-400 hover:text-white border border-zinc-700 hover:border-zinc-600 px-3.5 py-1.5 rounded-lg transition-colors text-sm"
-        >
-          <Headphones size={14} />
-          Voice
-        </motion.button>
-        <motion.button
-          whileHover={{ scale: 1.04 }}
-          whileTap={{ scale: 0.96 }}
-          onClick={() => navigate('/call/video')}
-          className="flex items-center gap-1.5 bg-violet-600 hover:bg-violet-500 text-white px-4 py-1.5 rounded-lg font-medium transition-colors text-sm shadow-lg shadow-violet-600/20"
-        >
-          <Video size={14} />
-          Start Video
-        </motion.button>
-      </div>
-    </nav>
+                {dropdownOpen && (
+                  <div className="absolute right-0 mt-2 w-56 bg-[#1a1a1a] border border-white/10 rounded-xl shadow-xl overflow-hidden py-1 z-50">
+                    <div className="px-4 py-3 border-b border-white/10">
+                      <p className="text-sm font-medium text-white truncate">{user?.name}</p>
+                      <p className="text-xs text-zinc-400 truncate">@{user?.username}</p>
+                    </div>
+                    
+                    <div className="py-1">
+                      <button 
+                        onClick={() => {
+                          setDropdownOpen(false);
+                          setIsSettingsModalOpen(true);
+                        }}
+                        className="flex items-center gap-3 px-4 py-2 text-sm text-zinc-300 hover:bg-white/5 hover:text-white transition-colors w-full text-left cursor-pointer"
+                      >
+                        <Settings size={16} />
+                        Settings
+                      </button>
+                      
+                      <button 
+                        onClick={handleLogout}
+                        className="flex items-center gap-3 px-4 py-2 text-sm text-red-400 hover:bg-red-500/10 transition-colors w-full text-left cursor-pointer"
+                      >
+                        <LogOut size={16} />
+                        Sign out
+                      </button>
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
+          ) : (
+            <div className="flex items-center gap-2">
+              <button
+                onClick={() => setIsLoginModalOpen(true)}
+                className="text-zinc-300 font-medium hover:text-white transition-colors text-[14px] px-4 py-2 cursor-pointer"
+              >
+                Sign In
+              </button>
+              <button
+                onClick={() => setIsLoginModalOpen(true)}
+                className="bg-white text-black px-5 py-2 rounded-xl font-medium hover:bg-red-500 hover:text-white transition-colors text-[14px] cursor-pointer"
+              >
+                Sign Up
+              </button>
+            </div>
+          )}
+        </div>
+      </nav>
+
+      <LoginModal isOpen={isLoginModalOpen} onClose={() => setIsLoginModalOpen(false)} />
+      {isSettingsModalOpen && <SettingsModal onClose={() => setIsSettingsModalOpen(false)} />}
+    </>
   );
 }

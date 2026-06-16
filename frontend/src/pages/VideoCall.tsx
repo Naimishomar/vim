@@ -8,16 +8,24 @@ import { useCallStore } from '../store/callStore';
 import { webrtcService, attachStreamToVideo, type MediaErrorCode } from '../services/webrtcService';
 import { socketService } from '../services/socketService';
 import { useNavigate, useLocation } from 'react-router-dom';
+import { useAuthStore } from '../store/useAuthStore';
 
 const MEDIA_ERROR_MESSAGES: Record<MediaErrorCode, string> = {
   'not-supported': 'Your browser does not support camera access. Try Chrome or Firefox on HTTPS/localhost.',
   'permission-denied': 'Camera or microphone access was denied. Allow permissions in your browser settings and try again.',
   'not-found': 'No camera or microphone was found. Connect a device and try again.',
+  'in-use': 'Camera is already in use by another application. Please close other apps using your camera and try again.',
   'unknown': 'Could not access your camera or microphone. Please check your device and try again.',
 };
 
+function getMediaErrorMessage(error: string): string {
+  if (error in MEDIA_ERROR_MESSAGES) return MEDIA_ERROR_MESSAGES[error as MediaErrorCode];
+  return error; // Show the raw error message if it's from Cloudflare or WebRTC
+}
+
 export default function VideoCall() {
   const { isSearching, isMatched, peerSocketId, peerData, messages, setSearching, setMatch, endCall, addMessage } = useCallStore();
+  const { user, isAuthenticated } = useAuthStore();
   const localVideoRef = useRef<HTMLVideoElement>(null);
   const remoteVideoRef = useRef<HTMLVideoElement>(null);
   const chatEndRef = useRef<HTMLDivElement>(null);
@@ -36,13 +44,17 @@ export default function VideoCall() {
   const [mediaError, setMediaError] = useState<MediaErrorCode | null>(null);
   const [isCameraLoading, setIsCameraLoading] = useState(!isAudioOnly);
   const [localStreamVersion, setLocalStreamVersion] = useState(0);
+  const [audioLevel, setAudioLevel] = useState(0);
+  const [peerFlag, setPeerFlag] = useState<string | null>(null);
+  const [countryCodeMap, setCountryCodeMap] = useState<Record<string, string>>({});
   const typingTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const isChatOpenRef = useRef(isChatOpen);
 
   const startLocalCamera = useCallback(async () => {
+    const resolution = user?.premiumStatus ? '720' : '480'; // Could be 1080, but 720 is a good premium default
     if (isAudioOnly) {
       setIsCameraLoading(true);
-      const { stream, error } = await webrtcService.startLocalStream(false);
+      const { stream, error } = await webrtcService.startLocalStream(false, resolution);
       setIsCameraLoading(false);
       if (error) setMediaError(error);
       else setMediaError(null);
@@ -50,7 +62,7 @@ export default function VideoCall() {
     }
 
     setIsCameraLoading(true);
-    const { stream, error } = await webrtcService.startLocalStream(true);
+    const { stream, error } = await webrtcService.startLocalStream(true, resolution);
     setIsCameraLoading(false);
 
     if (error) {
@@ -78,33 +90,23 @@ export default function VideoCall() {
         attachStreamToVideo(remoteVideoRef.current, stream);
       };
 
-      const ok = await webrtcService.initialize(
-        data.isInitiator,
+      const resolution = user?.premiumStatus ? '720' : '480';
+      const { ok, error } = await webrtcService.initialize(
         data.peerSocketId,
         !isAudioOnly,
         onRemoteStream,
+        resolution
       );
 
       if (!ok && !mediaError) {
-        setMediaError('unknown');
+        setMediaError((error as MediaErrorCode) || 'unknown');
       }
 
       attachStreamToVideo(localVideoRef.current, webrtcService.localStream);
     };
 
-    const onWebRtcOffer = async (data: { peerSocketId: string; offer: RTCSessionDescriptionInit }) => {
-      await webrtcService.handleOffer(data.offer, data.peerSocketId, (stream) => {
-        attachStreamToVideo(remoteVideoRef.current, stream);
-      });
-      attachStreamToVideo(localVideoRef.current, webrtcService.localStream);
-    };
-
-    const onWebRtcAnswer = async (data: { answer: RTCSessionDescriptionInit }) => {
-      await webrtcService.handleAnswer(data.answer);
-    };
-
-    const onWebRtcIceCandidate = async (data: { candidate: RTCIceCandidateInit }) => {
-      await webrtcService.handleIceCandidate(data.candidate);
+    const onReceiveTracks = async (data: { peerSocketId: string; tracks: string[]; sessionId: string }) => {
+      await webrtcService.pullTracks(data.sessionId, data.tracks);
     };
 
     const onPartnerDisconnected = () => {
@@ -123,9 +125,7 @@ export default function VideoCall() {
     };
 
     socketService.on('match-found', onMatchFound);
-    socketService.on('webrtc-offer', onWebRtcOffer);
-    socketService.on('webrtc-answer', onWebRtcAnswer);
-    socketService.on('webrtc-ice-candidate', onWebRtcIceCandidate);
+    socketService.on('receive-tracks', onReceiveTracks);
     socketService.on('partner-disconnected', onPartnerDisconnected);
     socketService.on('receive-message', onReceiveMessage);
     socketService.on('typing', onTyping);
@@ -135,16 +135,13 @@ export default function VideoCall() {
 
     return () => {
       socketService.off('match-found', onMatchFound);
-      socketService.off('webrtc-offer', onWebRtcOffer);
-      socketService.off('webrtc-answer', onWebRtcAnswer);
-      socketService.off('webrtc-ice-candidate', onWebRtcIceCandidate);
+      socketService.off('receive-tracks', onReceiveTracks);
       socketService.off('partner-disconnected', onPartnerDisconnected);
       socketService.off('receive-message', onReceiveMessage);
       socketService.off('typing', onTyping);
 
       socketService.emit('cancel-search', { queueName: isAudioOnly ? 'random-audio' : 'random-video-480' });
       webrtcService.endCall();
-      socketService.disconnect();
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
@@ -156,8 +153,87 @@ export default function VideoCall() {
   }, [localStreamVersion, isVideoOn, isCameraLoading, isAudioOnly]);
 
   useEffect(() => {
+    if (!isAudioOnly || !isMatched) return;
+
+    let audioContext: AudioContext | null = null;
+    let analyser: AnalyserNode | null = null;
+    let microphone: MediaStreamAudioSourceNode | null = null;
+    let animationFrame: number;
+
+    const startAudioAnalysis = () => {
+      const stream = webrtcService.remoteStream;
+      if (!stream || stream.getAudioTracks().length === 0) return;
+
+      try {
+        audioContext = new (window.AudioContext || (window as any).webkitAudioContext)();
+        analyser = audioContext.createAnalyser();
+        analyser.fftSize = 256;
+        microphone = audioContext.createMediaStreamSource(stream);
+        microphone.connect(analyser);
+
+        const dataArray = new Uint8Array(analyser.frequencyBinCount);
+
+        const updateLevel = () => {
+          analyser!.getByteFrequencyData(dataArray);
+          let sum = 0;
+          for (let i = 0; i < dataArray.length; i++) {
+            sum += dataArray[i];
+          }
+          const average = sum / dataArray.length;
+          setAudioLevel(average / 255);
+          animationFrame = requestAnimationFrame(updateLevel);
+        };
+
+        updateLevel();
+      } catch (e) {
+        console.error('Audio analysis error:', e);
+      }
+    };
+
+    const interval = setInterval(() => {
+      if (webrtcService.remoteStream?.getAudioTracks().length) {
+        clearInterval(interval);
+        startAudioAnalysis();
+      }
+    }, 500);
+
+    return () => {
+      clearInterval(interval);
+      if (animationFrame) cancelAnimationFrame(animationFrame);
+      microphone?.disconnect();
+      analyser?.disconnect();
+      if (audioContext?.state !== 'closed') {
+        void audioContext?.close().catch(() => {});
+      }
+      setAudioLevel(0);
+    };
+  }, [isAudioOnly, isMatched]);
+
+  useEffect(() => {
     chatEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
+
+  useEffect(() => {
+    fetch('https://flagcdn.com/en/codes.json')
+      .then(res => res.json())
+      .then((data: Record<string, string>) => {
+        const reverseMap: Record<string, string> = {};
+        for (const [code, name] of Object.entries(data)) {
+          if (!code.includes('-')) reverseMap[name] = code;
+        }
+        setCountryCodeMap(reverseMap);
+      })
+      .catch(err => console.error('Failed to fetch country codes:', err));
+  }, []);
+
+  useEffect(() => {
+    if (peerData?.country && countryCodeMap[peerData.country]) {
+      const code = countryCodeMap[peerData.country];
+      setPeerFlag(`https://flagcdn.com/w40/${code}.png`);
+    } else {
+      setPeerFlag(null);
+    }
+  }, [peerData, countryCodeMap]);
 
   useEffect(() => {
     if (isChatOpen) setUnreadCount(0);
@@ -166,13 +242,25 @@ export default function VideoCall() {
 
   const handleStartSearch = () => {
     setSearching(true);
+    const params = new URLSearchParams(location.search);
+    const targetCountry = params.get('country');
+    const genderPrefStr = params.get('gender');
+    
+    let targetGender = undefined;
+    if (genderPrefStr === 'Opposite Gender') targetGender = 'opposite';
+    else if (genderPrefStr === 'Same Gender') targetGender = 'same';
+    else if (genderPrefStr === 'Random Gender') targetGender = 'random';
+
     socketService.emit('search', {
-      userId: 'guest-' + Math.random().toString(36).substring(7),
+      userId: isAuthenticated && user ? user._id : 'guest-' + Math.random().toString(36).substring(7),
       queueName: isAudioOnly ? 'random-audio' : 'random-video-480',
+      targetCountry: targetCountry || undefined,
+      targetGender
     });
   };
 
   const handleSkip = () => {
+    if (isSearching) return;
     webrtcService.endPeerConnection();
     if (peerSocketId) socketService.emit('skip', { peerSocketId });
     handleStartSearch();
@@ -193,7 +281,8 @@ export default function VideoCall() {
 
   const toggleVideo = async () => {
     const enabled = !isVideoOn;
-    const success = await webrtcService.setVideoEnabled(enabled);
+    const resolution = user?.premiumStatus ? '720' : '480';
+    const success = await webrtcService.setVideoEnabled(enabled, resolution);
     if (!success) {
       setMediaError('permission-denied');
       return;
@@ -238,9 +327,9 @@ export default function VideoCall() {
     <div className="h-screen w-full bg-black flex flex-col relative overflow-hidden select-none">
 
       {isAudioOnly && (
-        <div className="absolute top-0 left-0 right-0 z-20 flex items-center justify-center gap-2 py-2 bg-violet-600/20 border-b border-violet-500/30 text-violet-300 text-sm">
+        <div className="absolute top-0 left-0 right-0 z-20 flex items-center justify-center gap-2 py-2 bg-zinc-800/90 border-b border-zinc-700 backdrop-blur text-white text-sm shadow-md">
           <Headphones size={16} />
-          <span>Audio-only mode</span>
+          <span className="font-medium">Audio-only mode</span>
         </div>
       )}
 
@@ -249,11 +338,11 @@ export default function VideoCall() {
         <div className="absolute top-0 left-0 right-0 z-30 flex items-center justify-between gap-3 px-4 py-3 bg-red-950/90 border-b border-red-500/40 text-red-200 text-sm">
           <div className="flex items-center gap-2 min-w-0">
             <AlertTriangle size={16} className="shrink-0 text-red-400" />
-            <span className="truncate">{MEDIA_ERROR_MESSAGES[mediaError]}</span>
+            <span className="truncate">{getMediaErrorMessage(mediaError)}</span>
           </div>
           <button
             onClick={handleRetryCamera}
-            className="shrink-0 flex items-center gap-1.5 px-3 py-1 rounded-full bg-red-500/20 hover:bg-red-500/30 text-red-200 text-xs font-medium transition-colors"
+            className="cursor-pointer shrink-0 flex items-center gap-1.5 px-3 py-1 rounded-full bg-red-500/20 hover:bg-red-500/30 text-red-200 text-xs font-medium transition-colors"
           >
             <RefreshCw size={12} />
             Retry
@@ -261,7 +350,17 @@ export default function VideoCall() {
         </div>
       )}
 
-      <div className="absolute inset-0 bg-zinc-900 flex items-center justify-center">
+      <div className="absolute inset-0 bg-[#15171B] flex items-center justify-center">
+        {/* ─── Dot Grid ─── */}
+        {(isSearching || !isMatched) && (
+          <div
+            className="absolute inset-0 z-0 pointer-events-none opacity-[0.10]"
+            style={{
+              backgroundImage: 'radial-gradient(circle at center, white 1.5px, transparent 1.5px)',
+              backgroundSize: '32px 32px',
+            }}
+          />
+        )}
         {isSearching || !isMatched ? (
           <motion.div
             initial={{ opacity: 0, scale: 0.9 }}
@@ -269,9 +368,9 @@ export default function VideoCall() {
             className="flex flex-col items-center gap-6 text-zinc-400"
           >
             <div className="relative">
-              <div className="w-20 h-20 rounded-full border-4 border-violet-500/40 border-t-violet-500 animate-spin" />
+              <div className="w-20 h-20 rounded-full border-4 border-white/20 border-t-white animate-spin" />
               <div className="absolute inset-0 flex items-center justify-center">
-                {isAudioOnly ? <Headphones size={28} className="text-violet-400" /> : <Video size={28} className="text-violet-400" />}
+                {isAudioOnly ? <Headphones size={28} className="text-white" /> : <Video size={28} className="text-white" />}
               </div>
             </div>
             <div className="text-center">
@@ -284,23 +383,62 @@ export default function VideoCall() {
           </motion.div>
         ) : (
           <>
-            {isAudioOnly ? (
+            {isAudioOnly && (
               <motion.div
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
-                className="flex flex-col items-center gap-4"
+                className="flex flex-col items-center gap-6"
               >
-                <div className="w-32 h-32 rounded-full bg-gradient-to-br from-violet-500 to-indigo-600 flex items-center justify-center shadow-2xl shadow-violet-500/30">
-                  <span className="text-5xl font-bold text-white">
-                    {peerData?.name?.[0]?.toUpperCase() ?? '?'}
-                  </span>
+                <div className="relative">
+                  {/* Outer wave 2 */}
+                  <motion.div 
+                    animate={{ 
+                      scale: 1 + audioLevel * 1.5, 
+                      opacity: Math.max(0, 0.3 - audioLevel * 0.3) 
+                    }}
+                    transition={{ type: 'tween', ease: 'easeOut', duration: 0.1 }}
+                    className="absolute inset-0 rounded-full bg-violet-400"
+                  />
+                  {/* Outer wave 1 */}
+                  <motion.div 
+                    animate={{ 
+                      scale: 1 + audioLevel * 0.8, 
+                      opacity: Math.max(0, 0.5 - audioLevel * 0.5) 
+                    }}
+                    transition={{ type: 'tween', ease: 'easeOut', duration: 0.1 }}
+                    className="absolute inset-0 rounded-full bg-violet-500"
+                  />
+                  <div className="relative w-32 h-32 rounded-full bg-gradient-to-br from-violet-500 to-indigo-600 flex items-center justify-center shadow-2xl shadow-violet-500/30 z-10 overflow-hidden">
+                    {peerData?.profileImage ? (
+                      <img src={peerData.profileImage} alt={peerData.name} className="w-full h-full object-cover" />
+                    ) : (
+                      <span className="text-5xl font-bold text-white">
+                        {peerData?.name?.[0]?.toUpperCase() ?? '?'}
+                      </span>
+                    )}
+                  </div>
                 </div>
-                <p className="text-white font-semibold text-lg">{peerData?.name ?? 'Stranger'}</p>
-                {peerTyping && <p className="text-zinc-400 text-sm italic animate-pulse">typing…</p>}
+                <div className="text-center mt-4">
+                  <p className="text-white font-semibold text-lg flex items-center justify-center gap-2">
+                    {peerData?.name ?? 'Stranger'}
+                    {peerFlag && <img src={peerFlag} alt="flag" className="w-5 h-4 rounded-sm object-cover" />}
+                  </p>
+                  {peerTyping ? (
+                    <p className="text-zinc-400 text-sm italic animate-pulse mt-1">typing…</p>
+                  ) : (
+                    <p className="text-zinc-500 text-sm mt-1">
+                      {audioLevel > 0.05 ? 'Speaking...' : 'Connected'}
+                    </p>
+                  )}
+                </div>
               </motion.div>
-            ) : (
-              <video ref={remoteVideoRef} className="w-full h-full object-cover" autoPlay playsInline />
             )}
+            <video 
+              ref={remoteVideoRef} 
+              className={isAudioOnly ? "hidden" : "w-full h-full object-cover"} 
+              autoPlay 
+              playsInline 
+            />
           </>
         )}
       </div>
@@ -329,7 +467,7 @@ export default function VideoCall() {
       )}
 
       {!isAudioOnly && isMatched && peerTyping && (
-        <div className="absolute top-6 left-6 z-10 text-xs text-zinc-300 bg-black/60 backdrop-blur px-3 py-1.5 rounded-full flex items-center gap-2">
+        <div className="absolute top-16 left-6 z-10 text-xs text-zinc-300 bg-black/60 backdrop-blur px-3 py-1.5 rounded-full flex items-center gap-2">
           <span className="flex gap-0.5">
             <span className="w-1.5 h-1.5 bg-zinc-400 rounded-full animate-bounce" style={{ animationDelay: '0ms' }} />
             <span className="w-1.5 h-1.5 bg-zinc-400 rounded-full animate-bounce" style={{ animationDelay: '150ms' }} />
@@ -339,12 +477,19 @@ export default function VideoCall() {
         </div>
       )}
 
+      {!isAudioOnly && isMatched && (
+        <div className="absolute top-6 left-6 z-10 text-xs text-zinc-300 bg-black/60 backdrop-blur px-3 py-1.5 rounded-full flex items-center gap-2 shadow-lg">
+          {peerFlag && <img src={peerFlag} alt="flag" className="w-4 h-3 rounded-sm object-cover" />}
+          <span className="font-medium text-white">{peerData?.name || 'Stranger'}</span>
+        </div>
+      )}
+
       <div className="absolute bottom-8 left-1/2 -translate-x-1/2 z-10 flex items-center gap-3 bg-zinc-900/80 backdrop-blur-xl p-3 rounded-full border border-white/10 shadow-2xl">
 
         <motion.button
           whileTap={{ scale: 0.9 }}
           onClick={toggleMic}
-          className={`p-3.5 rounded-full transition-colors ${isMicOn ? 'bg-zinc-800 hover:bg-zinc-700 text-white' : 'bg-red-500/20 text-red-400 hover:bg-red-500/30 ring-1 ring-red-500/50'}`}
+          className={`cursor-pointer p-3.5 rounded-full transition-colors ${isMicOn ? 'bg-zinc-800 hover:bg-zinc-700 text-white' : 'bg-red-500/20 text-red-400 hover:bg-red-500/30 ring-1 ring-red-500/50'}`}
           title={isMicOn ? 'Mute mic' : 'Unmute mic'}
         >
           {isMicOn ? <Mic size={22} /> : <MicOff size={22} />}
@@ -354,7 +499,7 @@ export default function VideoCall() {
           <motion.button
             whileTap={{ scale: 0.9 }}
             onClick={() => void toggleVideo()}
-            className={`p-3.5 rounded-full transition-colors ${isVideoOn ? 'bg-zinc-800 hover:bg-zinc-700 text-white' : 'bg-red-500/20 text-red-400 hover:bg-red-500/30 ring-1 ring-red-500/50'}`}
+            className={`cursor-pointer p-3.5 rounded-full transition-colors ${isVideoOn ? 'bg-zinc-800 hover:bg-zinc-700 text-white' : 'bg-red-500/20 text-red-400 hover:bg-red-500/30 ring-1 ring-red-500/50'}`}
             title={isVideoOn ? 'Turn off camera' : 'Turn on camera'}
           >
             {isVideoOn ? <Video size={22} /> : <VideoOff size={22} />}
@@ -364,7 +509,7 @@ export default function VideoCall() {
         <motion.button
           whileTap={{ scale: 0.9 }}
           onClick={() => setIsChatOpen((o) => !o)}
-          className="relative p-3.5 rounded-full bg-zinc-800 hover:bg-zinc-700 transition-colors text-white"
+          className="cursor-pointer relative p-3.5 rounded-full bg-zinc-800 hover:bg-zinc-700 transition-colors text-white"
           title="Toggle chat"
         >
           <MessageSquare size={22} />
@@ -378,7 +523,7 @@ export default function VideoCall() {
         <motion.button
           whileTap={{ scale: 0.9 }}
           onClick={handleEndCall}
-          className="p-3.5 rounded-full bg-red-500 hover:bg-red-600 transition-colors text-white shadow-lg shadow-red-500/30"
+          className="cursor-pointer p-3.5 rounded-full bg-red-500 hover:bg-red-600 transition-colors text-white shadow-lg shadow-red-500/30"
           title="End call"
         >
           <PhoneOff size={22} />
@@ -389,7 +534,7 @@ export default function VideoCall() {
         <motion.button
           whileTap={{ scale: 0.9 }}
           onClick={handleSkip}
-          className="px-5 py-3 rounded-full bg-violet-600 hover:bg-violet-500 transition-colors text-white font-semibold text-sm flex items-center gap-2"
+          className="cursor-pointer px-5 py-3 rounded-full bg-white hover:bg-zinc-200 transition-colors text-black font-semibold text-sm flex items-center gap-2 shadow-lg shadow-white/10"
           title="Skip to next person"
         >
           Next
@@ -398,7 +543,7 @@ export default function VideoCall() {
 
         <motion.button
           whileTap={{ scale: 0.9 }}
-          className="p-3.5 rounded-full bg-zinc-800 hover:bg-zinc-700 transition-colors text-zinc-500 hover:text-orange-400"
+          className="cursor-pointer p-3.5 rounded-full bg-zinc-800 hover:bg-zinc-700 transition-colors text-zinc-500 hover:text-orange-400"
           title="Report user"
         >
           <AlertTriangle size={22} />
@@ -424,7 +569,7 @@ export default function VideoCall() {
               </div>
               <button
                 onClick={() => setIsChatOpen(false)}
-                className="text-zinc-500 hover:text-white transition-colors"
+                className="cursor-pointer text-zinc-500 hover:text-white transition-colors"
               >
                 <X size={18} />
               </button>
@@ -485,7 +630,7 @@ export default function VideoCall() {
                   whileTap={{ scale: 0.85 }}
                   onClick={handleSendMessage}
                   disabled={!isMatched || !messageInput.trim()}
-                  className="text-violet-400 hover:text-violet-300 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+                  className="cursor-pointer text-violet-400 hover:text-violet-300 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
                 >
                   <Send size={18} />
                 </motion.button>

@@ -16,4 +16,7 @@ export const ENV = {
 
   CLOUDFLARE_APP_ID: process.env.CLOUDFLARE_APP_ID || 'mock_app_id',
   CLOUDFLARE_API_TOKEN: process.env.CLOUDFLARE_API_TOKEN || 'mock_api_token',
+
+  RAZORPAY_KEY_ID: process.env.RAZORPAY_KEY_ID || '',
+  RAZORPAY_KEY_SECRET: process.env.RAZORPAY_KEY_SECRET || '',
 };

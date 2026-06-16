@@ -25,4 +25,13 @@ io.on('connection', (socket) => {
       trackId,
     });
   });
+
+  socket.on('share-tracks', (data) => {
+    const { peerSocketId, tracks, sessionId } = data;
+    io.to(peerSocketId).emit('receive-tracks', {
+      peerSocketId: socket.id,
+      tracks,
+      sessionId,
+    });
+  });
 });

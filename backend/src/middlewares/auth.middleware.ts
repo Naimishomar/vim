@@ -23,6 +23,12 @@ export const requireAuth = async (req: Request, res: Response, next: NextFunctio
       return;
     }
 
+    // Lazy check for premium expiry
+    if (user.premiumStatus && user.premiumExpiryDate && new Date() > user.premiumExpiryDate) {
+      user.premiumStatus = false;
+      await user.save();
+    }
+
     // @ts-ignore
     req.user = user;
     next();

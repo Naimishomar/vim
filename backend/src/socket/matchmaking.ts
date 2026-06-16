@@ -3,9 +3,9 @@ import { addToQueue, removeFromQueue } from '../redis/matchmaking';
 
 io.on('connection', (socket) => {
   socket.on('search', async (data) => {
-    const { userId, queueName = 'random-video-480' } = data;
-    console.log(`User ${userId} started searching in ${queueName}`);
-    await addToQueue(socket.id, userId, queueName);
+    const { userId, queueName = 'random-video-480', targetCountry, targetGender } = data;
+    console.log(`User ${userId} started searching in ${queueName} with targetCountry ${targetCountry || 'global'} and targetGender ${targetGender || 'default'}`);
+    await addToQueue(socket.id, userId, queueName, targetCountry, targetGender);
   });
 
   socket.on('cancel-search', async (data) => {
@@ -19,7 +19,9 @@ io.on('connection', (socket) => {
     io.to(peerSocketId).emit('partner-disconnected');
   });
 
-  socket.on('disconnect', () => {
+  socket.on('disconnect', async () => {
     console.log('User disconnected:', socket.id);
+    await removeFromQueue(socket.id, 'random-video-480');
+    await removeFromQueue(socket.id, 'random-audio');
   });
 });
