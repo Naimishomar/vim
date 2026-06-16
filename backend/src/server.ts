@@ -11,6 +11,7 @@ import paymentRoutes from './routes/payment.routes';
 import userRoutes from './routes/user.routes';
 import oauthRoutes from './routes/oauth.routes';
 import uploadRoutes from './routes/upload.routes';
+import chatRoutes from './routes/chat.routes';
 import passport from './config/passport';
 import path from 'path';
 
@@ -34,6 +35,7 @@ app.use('/api/payment', paymentRoutes);
 app.use('/api/users', userRoutes);
 app.use('/api/oauth', oauthRoutes);
 app.use('/api/upload', uploadRoutes);
+app.use('/api/chat', chatRoutes);
 
 
 app.get("/", (req,res)=>{

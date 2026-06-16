@@ -1,10 +1,9 @@
 import { useState, useEffect, useRef } from 'react';
 import Lenis from 'lenis';
 import { io, Socket } from 'socket.io-client';
-import { Users, Search, Settings } from 'lucide-react';
+import { Users, Search } from 'lucide-react';
 import { useAuthStore } from '../store/useAuthStore';
 import DirectChatWindow from '../components/Chat/DirectChatWindow';
-import SettingsModal from '../components/SettingsModal';
 
 export default function GlobalChat() {
   const { user, isAuthenticated } = useAuthStore();
@@ -12,8 +11,6 @@ export default function GlobalChat() {
   const [onlineUsers, setOnlineUsers] = useState<any[]>([]);
   const [selectedUser, setSelectedUser] = useState<any | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
-  const [showSettings, setShowSettings] = useState(false);
-  
   const scrollRef = useRef<HTMLDivElement>(null);
 
   // Initialize Lenis for the sidebar
@@ -42,7 +39,8 @@ export default function GlobalChat() {
   useEffect(() => {
     if (!isAuthenticated || !user) return;
 
-    const newSocket = io('http://localhost:5000');
+    const backendUrl = import.meta.env.VITE_BACKEND_URL || 'http://localhost:5000';
+    const newSocket = io(backendUrl);
     setSocket(newSocket);
 
     newSocket.on('connect', () => {
@@ -58,7 +56,8 @@ export default function GlobalChat() {
     // We can fetch initial online users via REST
     const fetchOnlineUsers = async () => {
       try {
-        const res = await fetch('http://localhost:5000/api/chat/online');
+        const backendUrl = import.meta.env.VITE_BACKEND_URL || 'http://localhost:5000';
+        const res = await fetch(`${backendUrl}/api/chat/online`);
         const data = await res.json();
         if (data.onlineUsers) {
           // Filter out self
@@ -129,12 +128,10 @@ export default function GlobalChat() {
                 <Users size={24} className="text-zinc-500" />
                 <span className="text-white">Contacts</span>
               </h2>
-              <button 
-                onClick={() => setShowSettings(true)}
-                className="w-10 h-10 flex items-center justify-center rounded-full border border-white/10 hover:bg-white/5 text-zinc-400 hover:text-white transition-all shadow-sm"
-              >
-                <Settings size={18} />
-              </button>
+              <div className="flex items-center gap-2 px-3 py-1.5 bg-[#131313] border border-white/10 rounded-full">
+                <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse"></div>
+                <span className="text-xs font-medium text-zinc-400">{onlineUsers.length + 1} Online</span>
+              </div>
             </div>
             <div className="relative group">
               <Search size={16} className="absolute left-4 top-1/2 -translate-y-1/2 text-zinc-500 group-focus-within:text-white transition-colors" />
@@ -193,8 +190,6 @@ export default function GlobalChat() {
         <DirectChatWindow socket={socket} currentUser={user} selectedUser={selectedUser} />
 
       </div>
-
-      {showSettings && <SettingsModal onClose={() => setShowSettings(false)} />}
     </div>
   );
 }
