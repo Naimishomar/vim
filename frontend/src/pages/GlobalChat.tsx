@@ -12,21 +12,29 @@ export default function GlobalChat() {
   const [selectedUser, setSelectedUser] = useState<any | null>(null);
   const [unreadCounts, setUnreadCounts] = useState<{ [userId: string]: number }>({});
   const [searchTerm, setSearchTerm] = useState('');
-  const [hiddenUsers, setHiddenUsers] = useState<string[]>(() => {
-    try {
-      return JSON.parse(localStorage.getItem('vibelly_hidden_chats') || '[]');
-    } catch {
-      return [];
-    }
-  });
-
-  const handleHideUser = (e: React.MouseEvent, targetUserId: string) => {
+  const handleClearChat = async (e: React.MouseEvent, targetUserId: string) => {
     e.stopPropagation();
-    const newHidden = [...hiddenUsers, targetUserId];
-    setHiddenUsers(newHidden);
-    localStorage.setItem('vibelly_hidden_chats', JSON.stringify(newHidden));
+    
+    // Clear unread count locally
+    setUnreadCounts(prev => {
+      const newCounts = { ...prev };
+      delete newCounts[targetUserId];
+      return newCounts;
+    });
+
+    // Clear selected user if it's the one we are deleting
     if (selectedUser?.userId === targetUserId) {
       setSelectedUser(null);
+    }
+
+    try {
+      const backendUrl = import.meta.env.VITE_BACKEND_URL || 'http://localhost:5000';
+      const myId = user._id || user.username;
+      await fetch(`${backendUrl}/api/chat/history/${myId}/${targetUserId}`, {
+        method: 'DELETE'
+      });
+    } catch (err) {
+      console.error('Failed to clear chat history', err);
     }
   };
   
@@ -135,7 +143,6 @@ export default function GlobalChat() {
   }
 
   const filteredUsers = onlineUsers
-    .filter(u => !hiddenUsers.includes(u.userId))
     .filter(u => {
       if (!searchTerm) return true;
       const term = searchTerm.toLowerCase();
@@ -230,13 +237,13 @@ export default function GlobalChat() {
                           {unreadCounts[u.userId]}
                         </div>
                       )}
-                      <div 
-                        onClick={(e) => handleHideUser(e, u.userId)}
-                        className="ml-2 p-1.5 rounded-full hover:bg-white/10 text-zinc-500 hover:text-red-400 transition-colors opacity-0 group-hover:opacity-100 shrink-0"
+                      <button 
+                        onClick={(e) => handleClearChat(e, u.userId)}
+                        className="p-1.5 text-zinc-500 hover:text-red-400 hover:bg-white/5 rounded-full transition-colors opacity-0 group-hover:opacity-100 shrink-0"
                         title="Hide chat"
                       >
                         <Trash2 size={14} />
-                      </div>
+                      </button>
                     </div>
                   </button>
                 ))
