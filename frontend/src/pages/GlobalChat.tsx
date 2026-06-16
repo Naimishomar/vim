@@ -28,6 +28,7 @@ export default function GlobalChat() {
     }
 
     try {
+      if (!user) return;
       const backendUrl = import.meta.env.VITE_BACKEND_URL || 'http://localhost:5000';
       const myId = user._id || user.username;
       await fetch(`${backendUrl}/api/chat/history/${myId}/${targetUserId}`, {
