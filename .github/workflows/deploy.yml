@@ -38,4 +38,4 @@ jobs:
             
             # Run the new container, passing the .env file located securely on the server
             # We map port 5000 of the container to port 5000 on the host
-            docker run -d --name vibe-app --restart always -p 5000:5000 --env-file backend/.env vibe-app
+            docker run -d --name vibe-app --restart always -p 5000:5000 -e NODE_ENV=production --env-file backend/.env vibe-app
