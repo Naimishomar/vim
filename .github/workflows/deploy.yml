@@ -34,8 +34,7 @@ jobs:
             docker build -t vibe-app .
             
             # Stop and remove the existing container if it exists
-            docker stop vibe-app || true
-            docker rm vibe-app || true
+            docker rm -f vibe-app || true
             
             # Run the new container, passing the .env file located securely on the server
             # We map port 5000 of the container to port 5000 on the host
