@@ -474,7 +474,7 @@ export default function VideoCall() {
                       opacity: Math.max(0, 0.3 - audioLevel * 0.3) 
                     }}
                     transition={{ type: 'tween', ease: 'easeOut', duration: 0.1 }}
-                    className="absolute inset-0 rounded-full bg-violet-400"
+                    className="absolute inset-0 rounded-full bg-white/10"
                   />
                   {/* Outer wave 1 */}
                   <motion.div 
@@ -483,9 +483,9 @@ export default function VideoCall() {
                       opacity: Math.max(0, 0.5 - audioLevel * 0.5) 
                     }}
                     transition={{ type: 'tween', ease: 'easeOut', duration: 0.1 }}
-                    className="absolute inset-0 rounded-full bg-violet-500"
+                    className="absolute inset-0 rounded-full bg-white/20"
                   />
-                  <div className="relative w-32 h-32 rounded-full bg-gradient-to-br from-violet-500 to-indigo-600 flex items-center justify-center shadow-2xl shadow-violet-500/30 z-10 overflow-hidden">
+                  <div className="relative w-32 h-32 rounded-full bg-gradient-to-br from-zinc-700 to-zinc-900 flex items-center justify-center shadow-2xl shadow-black/50 z-10 overflow-hidden">
                     {peerData?.profileImage ? (
                       <img src={peerData.profileImage} alt={peerData.name} className="w-full h-full object-cover" />
                     ) : (
@@ -495,7 +495,7 @@ export default function VideoCall() {
                     )}
                   </div>
                 </div>
-                <div className="text-center mt-4">
+                <div className="text-center mt-4 relative z-10">
                   <p className="text-white font-semibold text-lg flex items-center justify-center gap-2">
                     {peerData?.name ?? 'Stranger'}
                     {peerFlag && <img src={peerFlag} alt="flag" className="w-5 h-4 rounded-sm object-cover" />}
