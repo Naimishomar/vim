@@ -57,23 +57,31 @@ export const addToQueue = async (socketId: string, userId: string, baseQueueName
     if (isPremium && targetCountry) {
       // If targetCountry is specified, find the first user from that country
       const list = await redisClient.lrange<{ socketId: string; userId: string; country?: string }>(q, 0, -1);
-      const match = list.find(u => u && u.country?.toLowerCase() === targetCountry.toLowerCase());
-      if (match && match.socketId !== previousPeerSocketId && match.socketId !== socketId) {
-        await redisClient.lrem(q, 1, match);
-        peerData = match;
-        matchedQueue = q;
-        break;
+      const matches = list.filter(u => u && u.country?.toLowerCase() === targetCountry.toLowerCase());
+      for (const match of matches) {
+        if (match && match.socketId !== previousPeerSocketId && match.socketId !== socketId) {
+          const removedCount = await redisClient.lrem(q, 1, match);
+          if (removedCount > 0) {
+            peerData = match;
+            matchedQueue = q;
+            break;
+          }
+        }
       }
+      if (peerData) break;
     } else {
       // Find the first peer that is NOT ourselves and NOT the previous peer
       const list = await redisClient.lrange<{ socketId: string; userId: string; country?: string }>(q, 0, -1);
-      const match = list.find(u => u && u.socketId !== socketId && u.socketId !== previousPeerSocketId && u.userId !== userId);
-      if (match) {
-        await redisClient.lrem(q, 1, match);
-        peerData = match;
-        matchedQueue = q;
-        break;
+      const matches = list.filter(u => u && u.socketId !== socketId && u.socketId !== previousPeerSocketId && u.userId !== userId);
+      for (const match of matches) {
+        const removedCount = await redisClient.lrem(q, 1, match);
+        if (removedCount > 0) {
+          peerData = match;
+          matchedQueue = q;
+          break;
+        }
       }
+      if (peerData) break;
     }
   }
 

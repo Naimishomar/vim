@@ -40,22 +40,45 @@ export const useAuthStore = create<AuthState>()(
       },
       
       checkAuth: async () => {
-        const token = localStorage.getItem('vibe_token') || useAuthStore.getState().accessToken;
+        const state = useAuthStore.getState();
+        const token = localStorage.getItem('vibe_token') || state.accessToken;
         if (!token) return;
         
+        const backendUrl = import.meta.env.VITE_BACKEND_URL || 'http://localhost:5000';
+        
         try {
-          // Adjust API URL as needed if it differs, but typically we can use standard fetch
-          const backendUrl = import.meta.env.VITE_BACKEND_URL || 'http://localhost:5000';
-          const res = await fetch(`${backendUrl}/api/users/me`, {
+          let res = await fetch(`${backendUrl}/api/users/me`, {
             headers: { Authorization: `Bearer ${token}` }
           });
+
+          // If token expired, try to refresh
+          if (res.status === 401 && state.refreshToken) {
+            const refreshRes = await fetch(`${backendUrl}/api/auth/refresh`, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ refreshToken: state.refreshToken })
+            });
+
+            if (refreshRes.ok) {
+              const tokens = await refreshRes.json();
+              set({ accessToken: tokens.accessToken, refreshToken: tokens.refreshToken });
+              
+              // Retry fetching user profile with new access token
+              res = await fetch(`${backendUrl}/api/users/me`, {
+                headers: { Authorization: `Bearer ${tokens.accessToken}` }
+              });
+            }
+          }
+
           if (res.ok) {
             const data = await res.json();
             if (data.user) {
               set({ user: data.user, isAuthenticated: true });
             }
           } else {
+            // Both access and refresh tokens failed, log out
             set({ user: null, isAuthenticated: false, accessToken: null, refreshToken: null });
+            localStorage.removeItem('vibe_token');
           }
         } catch (error) {
           console.error('checkAuth failed:', error);
