@@ -114,6 +114,10 @@ export const addToQueue = async (socketId: string, userId: string, baseQueueName
       peerData: user1Data,
       isInitiator: false,
     });
+    
+    // Track active match so we can handle unexpected disconnects
+    await redisClient.set(`activeMatch:${socketId}`, peerData.socketId);
+    await redisClient.set(`activeMatch:${peerData.socketId}`, socketId);
   } else {
     // No one waiting — add self to queue
     const myQueue = `${baseQueueName}:${userGender}`;

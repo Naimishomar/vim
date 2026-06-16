@@ -569,10 +569,10 @@ export default function VideoCall() {
           >
             <div className="flex items-center justify-between px-4 py-3 border-b border-white/10">
               <div className="flex items-center gap-2">
-                <MessageSquare size={16} className="text-violet-400" />
+                <MessageSquare size={16} className="text-white" />
                 <span className="text-sm font-semibold text-white">Chat</span>
                 {isMatched && (
-                  <span className="text-[10px] bg-green-500/20 text-green-400 px-1.5 py-0.5 rounded-full">Connected</span>
+                  <span className="text-[10px] bg-zinc-500/20 text-zinc-400 px-1.5 py-0.5 rounded-full">Connected</span>
                 )}
               </div>
               <button
@@ -601,8 +601,8 @@ export default function VideoCall() {
                     <div
                       className={`max-w-[80%] px-3 py-2 rounded-2xl text-sm break-words ${
                         msg.from === 'me'
-                          ? 'bg-violet-600 text-white rounded-br-sm'
-                          : 'bg-zinc-800 text-zinc-200 rounded-bl-sm'
+                          ? 'bg-white text-black rounded-br-sm font-medium shadow-sm'
+                          : 'bg-zinc-800 text-white rounded-bl-sm shadow-sm'
                       }`}
                     >
                       {msg.text}
@@ -638,7 +638,7 @@ export default function VideoCall() {
                   whileTap={{ scale: 0.85 }}
                   onClick={handleSendMessage}
                   disabled={!isMatched || !messageInput.trim()}
-                  className="cursor-pointer text-violet-400 hover:text-violet-300 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+                  className="cursor-pointer text-white hover:text-zinc-300 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
                 >
                   <Send size={18} />
                 </motion.button>

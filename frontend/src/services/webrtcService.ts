@@ -120,12 +120,28 @@ class WebRTCService {
       await currentPc.setLocalDescription(offer);
       if (this.peerConnection !== currentPc) return { ok: false, error: 'Connection changed' };
 
+      // Wait for ICE gathering to complete so STUN candidates are in the SDP
+      await new Promise<void>((resolve) => {
+        if (currentPc.iceGatheringState === 'complete') return resolve();
+        const checkState = () => {
+          if (currentPc.iceGatheringState === 'complete') {
+            currentPc.removeEventListener('icegatheringstatechange', checkState);
+            resolve();
+          }
+        };
+        currentPc.addEventListener('icegatheringstatechange', checkState);
+        setTimeout(() => {
+          currentPc.removeEventListener('icegatheringstatechange', checkState);
+          resolve();
+        }, 1500);
+      });
+
       const res = await fetch(`${BACKEND_URL}/api/webrtc/sessions/new`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ sessionDescription: {
-          type: offer.type,
-          sdp: offer.sdp
+          type: currentPc.localDescription!.type,
+          sdp: currentPc.localDescription!.sdp
         }})
       });
 
@@ -157,8 +173,8 @@ class WebRTCService {
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
             sessionDescription: {
-              type: offer.type,
-              sdp: offer.sdp
+              type: currentPc.localDescription!.type,
+              sdp: currentPc.localDescription!.sdp
             },
             tracks: tracksPayload
           })
@@ -213,13 +229,29 @@ class WebRTCService {
     await currentPc.setLocalDescription(offer);
     if (this.peerConnection !== currentPc) return;
 
+    // Wait for ICE gathering
+    await new Promise<void>((resolve) => {
+      if (currentPc.iceGatheringState === 'complete') return resolve();
+      const checkState = () => {
+        if (currentPc.iceGatheringState === 'complete') {
+          currentPc.removeEventListener('icegatheringstatechange', checkState);
+          resolve();
+        }
+      };
+      currentPc.addEventListener('icegatheringstatechange', checkState);
+      setTimeout(() => {
+        currentPc.removeEventListener('icegatheringstatechange', checkState);
+        resolve();
+      }, 1500);
+    });
+
     const res = await fetch(`${BACKEND_URL}/api/webrtc/sessions/${this.cfSessionId}/tracks/new`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         sessionDescription: {
-          type: offer.type,
-          sdp: offer.sdp
+          type: currentPc.localDescription!.type,
+          sdp: currentPc.localDescription!.sdp
         },
         tracks: tracksPayload.map(t => ({
           location: t.location,
@@ -275,20 +307,36 @@ class WebRTCService {
         const currentPc = this.peerConnection;
         if (currentPc && this.cfSessionId) {
           const tc = currentPc.addTransceiver(videoTrack, { direction: 'sendonly' });
-          const offer = await currentPc.createOffer();
-          if (this.peerConnection !== currentPc) return false;
-          await currentPc.setLocalDescription(offer);
-          if (this.peerConnection !== currentPc) return false;
-          
-          const trackName = `vibe-${socketService.socket?.id}-${videoTrack.kind}`;
-          const trackRes = await fetch(`${BACKEND_URL}/api/webrtc/sessions/${this.cfSessionId}/tracks/new`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              sessionDescription: {
-                type: offer.type,
-                sdp: offer.sdp
-              },
+            const offer = await currentPc.createOffer();
+            if (this.peerConnection !== currentPc) return false;
+            await currentPc.setLocalDescription(offer);
+            if (this.peerConnection !== currentPc) return false;
+            
+            // Wait for ICE gathering
+            await new Promise<void>((resolve) => {
+              if (currentPc.iceGatheringState === 'complete') return resolve();
+              const checkState = () => {
+                if (currentPc.iceGatheringState === 'complete') {
+                  currentPc.removeEventListener('icegatheringstatechange', checkState);
+                  resolve();
+                }
+              };
+              currentPc.addEventListener('icegatheringstatechange', checkState);
+              setTimeout(() => {
+                currentPc.removeEventListener('icegatheringstatechange', checkState);
+                resolve();
+              }, 1500);
+            });
+
+            const trackName = `vibe-${socketService.socket?.id}-${videoTrack.kind}`;
+            const trackRes = await fetch(`${BACKEND_URL}/api/webrtc/sessions/${this.cfSessionId}/tracks/new`, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                sessionDescription: {
+                  type: currentPc.localDescription!.type,
+                  sdp: currentPc.localDescription!.sdp
+                },
               tracks: [{ location: 'local', mid: tc.mid, trackName }]
             })
           });
