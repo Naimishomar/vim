@@ -2,9 +2,7 @@ import { socketService } from './socketService';
 
 export type MediaErrorCode = 'not-supported' | 'permission-denied' | 'not-found' | 'in-use' | 'unknown';
 
-// In production (served by the backend), we use relative paths ('').
-// In development, we connect to the local Vite proxy or backend directly.
-const BACKEND_URL = import.meta.env.PROD ? '' : (import.meta.env.VITE_BACKEND_URL || 'http://localhost:5000');
+const BACKEND_URL = import.meta.env.VITE_BACKEND_URL || 'http://localhost:5000';
 
 function parseMediaError(err: unknown): MediaErrorCode {
   if (err instanceof DOMException) {

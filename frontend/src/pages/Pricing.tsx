@@ -46,7 +46,7 @@ export default function Pricing() {
       return;
     }
     try {
-      const backendUrl = import.meta.env.PROD ? '' : (import.meta.env.VITE_BACKEND_URL || 'http://localhost:5000');
+      const backendUrl = import.meta.env.VITE_BACKEND_URL || 'http://localhost:5000';
       let token = useAuthStore.getState().accessToken;
       let orderRes = await fetch(`${backendUrl}/api/payment/create-order`, {
         method: 'POST',
