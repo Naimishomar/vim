@@ -136,10 +136,12 @@ export default function GlobalChat() {
 
   const filteredUsers = onlineUsers
     .filter(u => !hiddenUsers.includes(u.userId))
-    .filter(u => 
-      u.name?.toLowerCase().includes(searchTerm.toLowerCase()) || 
-      u.username?.toLowerCase().includes(searchTerm.toLowerCase())
-    )
+    .filter(u => {
+      if (!searchTerm) return true;
+      const term = searchTerm.toLowerCase();
+      return (u.name?.toLowerCase() || '').includes(term) || 
+             (u.username?.toLowerCase() || '').includes(term);
+    })
     .sort((a, b) => {
       const aUnread = unreadCounts[a.userId] || 0;
       const bUnread = unreadCounts[b.userId] || 0;
