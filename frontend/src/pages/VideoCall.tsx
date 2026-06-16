@@ -44,6 +44,7 @@ export default function VideoCall() {
   const [mediaError, setMediaError] = useState<MediaErrorCode | null>(null);
   const [isCameraLoading, setIsCameraLoading] = useState(!isAudioOnly);
   const [localStreamVersion, setLocalStreamVersion] = useState(0);
+  const [remoteStreamVersion, setRemoteStreamVersion] = useState(0);
   const [audioLevel, setAudioLevel] = useState(0);
   const [peerFlag, setPeerFlag] = useState<string | null>(null);
   const [countryCodeMap, setCountryCodeMap] = useState<Record<string, string>>({});
@@ -88,6 +89,7 @@ export default function VideoCall() {
 
       const onRemoteStream = (stream: MediaStream) => {
         attachStreamToVideo(remoteVideoRef.current, stream);
+        setRemoteStreamVersion(v => v + 1);
       };
 
       const resolution = user?.premiumStatus ? '720' : '480';
@@ -151,6 +153,12 @@ export default function VideoCall() {
       attachStreamToVideo(localVideoRef.current, webrtcService.localStream);
     }
   }, [localStreamVersion, isVideoOn, isCameraLoading, isAudioOnly]);
+
+  useEffect(() => {
+    if (isMatched && remoteVideoRef.current && webrtcService.remoteStream) {
+      attachStreamToVideo(remoteVideoRef.current, webrtcService.remoteStream);
+    }
+  }, [isMatched, remoteStreamVersion]);
 
   useEffect(() => {
     if (!isAudioOnly || !isMatched) return;
