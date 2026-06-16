@@ -8,9 +8,10 @@ const router = Router();
 // Helper to generate tokens and redirect
 const handleAuthSuccess = (req: any, res: any) => {
   const user = req.user;
-  
+  const frontendUrl = process.env.NODE_ENV === 'production' ? 'https://vibelly.vercel.app' : (process.env.FRONTEND_URL || 'http://localhost:5173');
+
   if (!user) {
-    return res.redirect(`${process.env.FRONTEND_URL || 'http://localhost:5173'}?error=auth_failed`);
+    return res.redirect(`${frontendUrl}?error=auth_failed`);
   }
 
   const payload = { 
@@ -27,7 +28,7 @@ const handleAuthSuccess = (req: any, res: any) => {
   const refreshToken = jwt.sign(payload, ENV.JWT_REFRESH_SECRET, { expiresIn: '7d' });
 
   // Redirect to frontend callback route with tokens
-  const redirectUrl = `${process.env.FRONTEND_URL || 'http://localhost:5173'}/oauth-callback?accessToken=${accessToken}&refreshToken=${refreshToken}`;
+  const redirectUrl = `${frontendUrl}/oauth-callback?accessToken=${accessToken}&refreshToken=${refreshToken}`;
   res.redirect(redirectUrl);
 };
 
