@@ -261,8 +261,8 @@ export default function VideoCall() {
     isChatOpenRef.current = isChatOpen;
   }, [isChatOpen]);
 
-  const handleStartSearch = () => {
-    setSearching(true);
+  const handleStartSearch = (previousPeerSocketId?: string | null) => {
+    useCallStore.getState().setSearching(true);
     const params = new URLSearchParams(location.search);
     const targetCountry = params.get('country');
     const genderPrefStr = params.get('gender');
@@ -272,19 +272,24 @@ export default function VideoCall() {
     else if (genderPrefStr === 'Same Gender') targetGender = 'same';
     else if (genderPrefStr === 'Random Gender') targetGender = 'random';
 
+    const currentUser = useAuthStore.getState().user;
+    const isAuth = useAuthStore.getState().isAuthenticated;
+
     socketService.emit('search', {
-      userId: isAuthenticated && user ? user._id : 'guest-' + Math.random().toString(36).substring(7),
-      queueName: isAudioOnly ? 'random-audio' : 'random-video-480',
+      userId: isAuth && currentUser ? currentUser._id : 'guest-' + Math.random().toString(36).substring(7),
+      queueName: location.pathname.includes('/audio') ? 'random-audio' : 'random-video-480',
       targetCountry: targetCountry || undefined,
-      targetGender
+      targetGender,
+      previousPeerSocketId
     });
   };
 
   const handleSkip = () => {
-    if (isSearching) return;
+    const currentState = useCallStore.getState();
+    if (currentState.isSearching) return;
     webrtcService.endPeerConnection();
-    if (peerSocketId) socketService.emit('skip', { peerSocketId });
-    handleStartSearch();
+    if (currentState.peerSocketId) socketService.emit('skip', { peerSocketId: currentState.peerSocketId });
+    handleStartSearch(currentState.peerSocketId);
   };
 
   const handleEndCall = () => {
@@ -456,7 +461,7 @@ export default function VideoCall() {
             )}
             <video 
               ref={remoteVideoRef} 
-              className={isAudioOnly ? "hidden" : "w-full h-full object-cover"} 
+              className={isAudioOnly ? "hidden" : "w-full h-full object-contain bg-zinc-950"} 
               autoPlay 
               playsInline 
             />

@@ -3,9 +3,9 @@ import { addToQueue, removeFromQueue } from '../redis/matchmaking';
 
 io.on('connection', (socket) => {
   socket.on('search', async (data) => {
-    const { userId, queueName = 'random-video-480', targetCountry, targetGender } = data;
+    const { userId, queueName = 'random-video-480', targetCountry, targetGender, previousPeerSocketId } = data;
     console.log(`User ${userId} started searching in ${queueName} with targetCountry ${targetCountry || 'global'} and targetGender ${targetGender || 'default'}`);
-    await addToQueue(socket.id, userId, queueName, targetCountry, targetGender);
+    await addToQueue(socket.id, userId, queueName, targetCountry, targetGender, previousPeerSocketId);
   });
 
   socket.on('cancel-search', async (data) => {

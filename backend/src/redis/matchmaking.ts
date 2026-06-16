@@ -3,7 +3,7 @@ import { v4 as uuidv4 } from 'uuid';
 import Session from '../models/Session';
 import User from '../models/User';
 
-export const addToQueue = async (socketId: string, userId: string, baseQueueName: string, targetCountry?: string, targetGender?: string): Promise<void> => {
+export const addToQueue = async (socketId: string, userId: string, baseQueueName: string, targetCountry?: string, targetGender?: string, previousPeerSocketId?: string): Promise<void> => {
   let userGender = 'unspecified';
   let isPremium = false;
   let myCountry = 'unspecified';
@@ -58,15 +58,19 @@ export const addToQueue = async (socketId: string, userId: string, baseQueueName
       // If targetCountry is specified, find the first user from that country
       const list = await redisClient.lrange<{ socketId: string; userId: string; country?: string }>(q, 0, -1);
       const match = list.find(u => u && u.country?.toLowerCase() === targetCountry.toLowerCase());
-      if (match) {
+      if (match && match.socketId !== previousPeerSocketId && match.socketId !== socketId) {
         await redisClient.lrem(q, 1, match);
         peerData = match;
         matchedQueue = q;
         break;
       }
     } else {
-      peerData = await redisClient.lpop<{ socketId: string; userId: string; country?: string }>(q);
-      if (peerData) {
+      // Find the first peer that is NOT ourselves and NOT the previous peer
+      const list = await redisClient.lrange<{ socketId: string; userId: string; country?: string }>(q, 0, -1);
+      const match = list.find(u => u && u.socketId !== socketId && u.socketId !== previousPeerSocketId && u.userId !== userId);
+      if (match) {
+        await redisClient.lrem(q, 1, match);
+        peerData = match;
         matchedQueue = q;
         break;
       }
@@ -75,9 +79,9 @@ export const addToQueue = async (socketId: string, userId: string, baseQueueName
 
   if (peerData) {
     // Don't match with ourselves (same user ID or same socket connection)
-    if (peerData.userId === userId || peerData.socketId === socketId) {
+    if (peerData.userId === userId || peerData.socketId === socketId || peerData.socketId === previousPeerSocketId) {
       // Discard this ghost and recursively try to find a real partner.
-      return addToQueue(socketId, userId, baseQueueName, targetCountry, targetGender);
+      return addToQueue(socketId, userId, baseQueueName, targetCountry, targetGender, previousPeerSocketId);
     }
 
     // Match found!
