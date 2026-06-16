@@ -10,7 +10,14 @@ export default function GlobalChat() {
   const [socket, setSocket] = useState<Socket | null>(null);
   const [onlineUsers, setOnlineUsers] = useState<any[]>([]);
   const [selectedUser, setSelectedUser] = useState<any | null>(null);
+  const [unreadCounts, setUnreadCounts] = useState<{ [userId: string]: number }>({});
   const [searchTerm, setSearchTerm] = useState('');
+  
+  // Use ref to track selectedUser inside socket listener to avoid stale closures
+  const selectedUserRef = useRef(selectedUser);
+  useEffect(() => {
+    selectedUserRef.current = selectedUser;
+  }, [selectedUser]);
   const scrollRef = useRef<HTMLDivElement>(null);
 
   // Initialize Lenis for the sidebar
@@ -84,7 +91,15 @@ export default function GlobalChat() {
 
     newSocket.on('user-offline', (userId: string) => {
       setOnlineUsers(prev => prev.filter(u => u.userId !== userId));
-      // If we are chatting with them, we might want to show them offline, but for now we just keep the chat open.
+    });
+
+    newSocket.on('receive-direct-message', (msg: any) => {
+      if (selectedUserRef.current?.userId !== msg.senderId) {
+        setUnreadCounts(prev => ({
+          ...prev,
+          [msg.senderId]: (prev[msg.senderId] || 0) + 1
+        }));
+      }
     });
 
     return () => {
@@ -102,10 +117,17 @@ export default function GlobalChat() {
     );
   }
 
-  const filteredUsers = onlineUsers.filter(u => 
-    u.name?.toLowerCase().includes(searchTerm.toLowerCase()) || 
-    u.username?.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  const filteredUsers = onlineUsers
+    .filter(u => 
+      u.name?.toLowerCase().includes(searchTerm.toLowerCase()) || 
+      u.username?.toLowerCase().includes(searchTerm.toLowerCase())
+    )
+    .sort((a, b) => {
+      const aUnread = unreadCounts[a.userId] || 0;
+      const bUnread = unreadCounts[b.userId] || 0;
+      if (aUnread !== bUnread) return bUnread - aUnread; // Sort unread first
+      return (a.name || '').localeCompare(b.name || '');
+    });
 
   return (
     <div className="h-screen bg-[#15171B] text-white font-sans flex flex-col overflow-hidden">
@@ -156,7 +178,10 @@ export default function GlobalChat() {
                 filteredUsers.map((u) => (
                   <button
                     key={u.userId}
-                    onClick={() => setSelectedUser(u)}
+                    onClick={() => {
+                      setSelectedUser(u);
+                      setUnreadCounts(prev => ({ ...prev, [u.userId]: 0 }));
+                    }}
                     className={`w-full flex items-center gap-4 p-3 rounded-xl transition-all duration-300 border ${
                       selectedUser?.userId === u.userId 
                         ? 'bg-white/5 border-white/10' 
@@ -175,9 +200,16 @@ export default function GlobalChat() {
                       </div>
                       <div className="absolute bottom-0.5 right-0.5 w-3.5 h-3.5 bg-green-500 border-2 border-[#0A0A0A] rounded-full" />
                     </div>
-                    <div className="text-left flex-1 min-w-0">
-                      <p className="font-medium text-sm text-white truncate">{u.name || 'Anonymous'}</p>
-                      <p className="text-xs text-zinc-500 truncate mt-0.5">@{u.username}</p>
+                    <div className="text-left flex-1 min-w-0 flex justify-between items-center">
+                      <div>
+                        <p className={`font-medium text-sm truncate ${unreadCounts[u.userId] ? 'text-white' : 'text-zinc-300'}`}>{u.name || 'Anonymous'}</p>
+                        <p className="text-xs text-zinc-500 truncate mt-0.5">@{u.username}</p>
+                      </div>
+                      {!!unreadCounts[u.userId] && (
+                        <div className="bg-red-500 text-white text-[10px] font-bold px-2 py-0.5 rounded-full shrink-0">
+                          {unreadCounts[u.userId]}
+                        </div>
+                      )}
                     </div>
                   </button>
                 ))

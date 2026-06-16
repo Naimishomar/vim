@@ -1,4 +1,4 @@
-import { httpServer, connectDB, connectRedis } from './server';
+import { httpServer, connectDB, connectRedis, redisClient } from './server';
 import { ENV } from './config/env';
 
 // Import socket handlers
@@ -10,6 +10,14 @@ import './socket/chat';
 const start = async () => {
   await connectDB();
   await connectRedis();
+
+  // Clear stale online users on server boot
+  try {
+    await redisClient.del('online:users');
+    console.log('🧹 Cleared stale online users from Redis');
+  } catch (err) {
+    console.error('Failed to clear stale users:', err);
+  }
 
   httpServer.listen(ENV.PORT, () => {
     console.log(`Server is running on port ${ENV.PORT}`);

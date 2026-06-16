@@ -31,7 +31,8 @@ export default function DirectChatWindow({ socket, currentUser, selectedUser }: 
 
     const fetchHistory = async () => {
       try {
-        const res = await fetch(`http://localhost:5000/api/chat/history/${currentUser._id || currentUser.username}/${selectedUser.userId}`);
+        const backendUrl = import.meta.env.VITE_BACKEND_URL || 'http://localhost:5000';
+        const res = await fetch(`${backendUrl}/api/chat/history/${currentUser._id || currentUser.username}/${selectedUser.userId}`);
         const data = await res.json();
         if (data.messages) {
           setMessages(data.messages);
@@ -132,7 +133,8 @@ export default function DirectChatWindow({ socket, currentUser, selectedUser }: 
     formData.append('socketId', socket.id);
 
     try {
-      const res = await fetch('http://localhost:5000/api/upload/ephemeral', {
+      const backendUrl = import.meta.env.VITE_BACKEND_URL || 'http://localhost:5000';
+      const res = await fetch(`${backendUrl}/api/upload/ephemeral`, {
         method: 'POST',
         headers: {
           Authorization: `Bearer ${authState.accessToken}`
