@@ -1,6 +1,7 @@
 import Navbar from '../components/Navbar';
 import Footer from '../components/Footer';
 import SEO from '../components/SEO';
+import BlinkingDotsGrid from '../components/BlinkingDotsGrid';
 import { Mail, MapPin, Phone } from 'lucide-react';
 
 export default function Contact() {
@@ -12,13 +13,7 @@ export default function Contact() {
         canonicalUrl="/contact"
       />
       {/* ─── Dot Grid ─── */}
-      <div
-        className="fixed inset-0 z-0 pointer-events-none opacity-[0.15]"
-        style={{
-          backgroundImage: 'radial-gradient(circle at center, white 1.5px, transparent 1.5px)',
-          backgroundSize: '32px 32px',
-        }}
-      />
+      <BlinkingDotsGrid />
       <div className="relative z-10 w-full flex flex-col items-center">
         <Navbar />
       </div>

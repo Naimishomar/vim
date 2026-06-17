@@ -8,6 +8,7 @@ import {
 import Navbar from '../components/Navbar';
 import SEO from '../components/SEO';
 import Footer from '../components/Footer';
+import BlinkingDotsGrid from '../components/BlinkingDotsGrid';
 
 /* ─── Data ─── */
 const features = [
@@ -170,13 +171,7 @@ export default function Home() {
       />
 
       {/* ─── Dot Grid ─── */}
-      <div
-        className="fixed inset-0 z-0 pointer-events-none opacity-[0.15]"
-        style={{
-          backgroundImage: 'radial-gradient(circle at center, white 1.5px, transparent 1.5px)',
-          backgroundSize: '32px 32px',
-        }}
-      />
+      <BlinkingDotsGrid />
 
       <div className="relative z-10 flex flex-col min-h-screen">
         <Navbar />

@@ -5,6 +5,7 @@ import { Users, Search, Trash2 } from 'lucide-react';
 import { useAuthStore } from '../store/useAuthStore';
 import DirectChatWindow from '../components/Chat/DirectChatWindow';
 import SEO from '../components/SEO';
+import BlinkingDotsGrid from '../components/BlinkingDotsGrid';
 
 export default function GlobalChat() {
   const { user, isAuthenticated } = useAuthStore();
@@ -166,13 +167,7 @@ export default function GlobalChat() {
         canonicalUrl="/chat"
       />
       {/* ─── Dot Grid Background ─── */}
-      <div
-        className="absolute inset-0 z-0 pointer-events-none opacity-[0.15]"
-        style={{
-          backgroundImage: 'radial-gradient(circle at center, white 1.5px, transparent 1.5px)',
-          backgroundSize: '32px 32px',
-        }}
-      />
+      <BlinkingDotsGrid />
 
       <div className="flex-1 flex w-full relative z-10 overflow-hidden border-t border-white/5 bg-[#15171B]">
         
