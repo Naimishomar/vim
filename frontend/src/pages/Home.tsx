@@ -181,36 +181,27 @@ export default function Home() {
         ══════════════════════════════════════════ */}
         <section className="flex flex-col items-center justify-center text-center px-6 pt-12 pb-16 md:pt-24 md:pb-32 max-w-4xl mx-auto w-full">
 
-          <motion.p
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.05 }}
-            className="text-[15px] tracking-[0.2em] text-zinc-400 font-medium uppercase"
+          <p
+            className="text-[15px] tracking-[0.2em] text-zinc-400 font-medium uppercase mb-4"
           >
             Random Video &amp; Voice Chat
-          </motion.p>
+          </p>
 
-          <motion.h1
-            initial={{ opacity: 0, y: 18 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.1 }}
+          <h1
             className="text-5xl md:text-7xl font-normal tracking-tight leading-[1.1] mb-8"
             style={{ fontFamily: '"Playfair Display", "Merriweather", "Lora", ui-serif, Georgia, Cambria, "Times New Roman", Times, serif' }}
           >
             Meet someone new.
             <br />
             Right now.
-          </motion.h1>
+          </h1>
 
-          <motion.p
-            initial={{ opacity: 0, y: 18 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.15 }}
+          <p
             className="text-lg md:text-xl text-zinc-400 mb-10 max-w-xl leading-relaxed"
           >
             Anonymous real-time video and voice calls with strangers from around the world.
             No sign-up. No profile. Just press start.
-          </motion.p>
+          </p>
 
           <motion.div
             initial={{ opacity: 0, y: 18 }}
