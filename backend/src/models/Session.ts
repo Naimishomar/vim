@@ -17,7 +17,7 @@ const SessionSchema: Schema = new Schema({
   user2: { type: String, required: true },
   callType: { type: String, enum: ['video', 'audio', 'chat'], required: true },
   quality: { type: String, default: '480p' },
-  startedAt: { type: Date, default: Date.now },
+  startedAt: { type: Date, default: Date.now, expires: 86400 },
   endedAt: { type: Date },
   duration: { type: Number },
 });
