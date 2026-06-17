@@ -283,7 +283,7 @@ export default function VideoCall() {
       queueName: location.pathname.includes('/audio') ? 'random-audio-v2' : 'random-video-480-v2',
       targetCountry: targetCountry || undefined,
       targetGender,
-      previousPeerSocketId
+      // previousPeerSocketId // Commented out to allow reconnecting to the same user during early testing
     });
   };
 
