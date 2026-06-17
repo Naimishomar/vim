@@ -144,11 +144,7 @@ class WebRTCService {
         }
       }
 
-      // Process any queued ICE candidates
-      for (const candidate of this.queuedCandidates) {
-        await this.peerConnection.addIceCandidate(new RTCIceCandidate(candidate)).catch(console.error);
-      }
-      this.queuedCandidates = [];
+      // We don't process ICE candidates here anymore; they will be flushed when the remote description is set.
 
       return { ok: true };
     } catch (error) {
@@ -163,6 +159,8 @@ class WebRTCService {
       return;
     }
     await this.peerConnection.setRemoteDescription(new RTCSessionDescription(offer));
+    this.flushIceCandidates();
+    
     const answer = await this.peerConnection.createAnswer();
     await this.peerConnection.setLocalDescription(answer);
     if (this.peerSocketId) {
@@ -176,10 +174,19 @@ class WebRTCService {
   async handleAnswer(answer: RTCSessionDescriptionInit) {
     if (!this.peerConnection) return;
     await this.peerConnection.setRemoteDescription(new RTCSessionDescription(answer));
+    this.flushIceCandidates();
+  }
+
+  private async flushIceCandidates() {
+    if (!this.peerConnection) return;
+    for (const candidate of this.queuedCandidates) {
+      await this.peerConnection.addIceCandidate(new RTCIceCandidate(candidate)).catch(console.error);
+    }
+    this.queuedCandidates = [];
   }
 
   async handleIceCandidate(candidate: RTCIceCandidateInit) {
-    if (!this.peerConnection) {
+    if (!this.peerConnection || !this.peerConnection.remoteDescription) {
       this.queuedCandidates.push(candidate);
       return;
     }

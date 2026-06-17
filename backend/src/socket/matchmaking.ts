@@ -35,5 +35,7 @@ io.on('connection', (socket) => {
     
     await removeFromQueue(socket.id, 'random-video-480');
     await removeFromQueue(socket.id, 'random-audio');
+    await removeFromQueue(socket.id, 'random-video-480-v2');
+    await removeFromQueue(socket.id, 'random-audio-v2');
   });
 });

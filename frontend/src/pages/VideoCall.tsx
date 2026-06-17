@@ -158,7 +158,7 @@ export default function VideoCall() {
       socketService.off('receive-message', onReceiveMessage);
       socketService.off('typing', onTyping);
 
-      socketService.emit('cancel-search', { queueName: isAudioOnly ? 'random-audio' : 'random-video-480' });
+      socketService.emit('cancel-search', { queueName: isAudioOnly ? 'random-audio-v2' : 'random-video-480-v2' });
       webrtcService.endCall();
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -280,7 +280,7 @@ export default function VideoCall() {
 
     socketService.emit('search', {
       userId: isAuth && currentUser ? currentUser._id : 'guest-' + Math.random().toString(36).substring(7),
-      queueName: location.pathname.includes('/audio') ? 'random-audio' : 'random-video-480',
+      queueName: location.pathname.includes('/audio') ? 'random-audio-v2' : 'random-video-480-v2',
       targetCountry: targetCountry || undefined,
       targetGender,
       previousPeerSocketId
