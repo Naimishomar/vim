@@ -123,7 +123,7 @@ export default function VideoCall() {
     };
 
     const onPartnerDisconnected = () => {
-      handleSkip();
+      handleSkip(true);
     };
 
     const onReceiveMessage = (data: { message: string; timestamp: Date }) => {
@@ -286,11 +286,13 @@ export default function VideoCall() {
     });
   };
 
-  const handleSkip = () => {
+  const handleSkip = (isPartnerDisconnect = false) => {
     const currentState = useCallStore.getState();
     if (currentState.isSearching) return;
     webrtcService.endPeerConnection();
-    if (currentState.peerSocketId) socketService.emit('skip', { peerSocketId: currentState.peerSocketId });
+    if (currentState.peerSocketId && !isPartnerDisconnect) {
+      socketService.emit('skip', { peerSocketId: currentState.peerSocketId });
+    }
     handleStartSearch(currentState.peerSocketId);
   };
 
@@ -613,7 +615,7 @@ export default function VideoCall() {
 
         <motion.button
           whileTap={{ scale: 0.9 }}
-          onClick={handleSkip}
+          onClick={() => handleSkip(false)}
           className="cursor-pointer px-5 py-3 rounded-full bg-white hover:bg-zinc-200 transition-colors text-black font-semibold text-sm flex items-center gap-2 shadow-lg shadow-white/10"
           title="Skip to next person"
         >
