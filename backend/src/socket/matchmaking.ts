@@ -5,6 +5,7 @@ io.on('connection', (socket) => {
   socket.on('search', async (data) => {
     const { userId, queueName = 'random-video-480', targetCountry, targetGender, previousPeerSocketId } = data;
     console.log(`User ${userId} started searching in ${queueName} with targetCountry ${targetCountry || 'global'} and targetGender ${targetGender || 'default'}`);
+    await removeFromQueue(socket.id, queueName);
     await addToQueue(socket.id, userId, queueName, targetCountry, targetGender, previousPeerSocketId);
   });
 

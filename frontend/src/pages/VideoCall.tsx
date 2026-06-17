@@ -264,7 +264,7 @@ export default function VideoCall() {
     isChatOpenRef.current = isChatOpen;
   }, [isChatOpen]);
 
-  const handleStartSearch = (/* previousPeerSocketId?: string | null */) => {
+  const handleStartSearch = (previousPeerSocketId?: string | null) => {
     useCallStore.getState().setSearching(true);
     const params = new URLSearchParams(location.search);
     const targetCountry = params.get('country');
@@ -283,7 +283,7 @@ export default function VideoCall() {
       queueName: location.pathname.includes('/audio') ? 'random-audio-v2' : 'random-video-480-v2',
       targetCountry: targetCountry || undefined,
       targetGender,
-      // previousPeerSocketId // Commented out to allow reconnecting to the same user during early testing
+      previousPeerSocketId
     });
   };
 
@@ -294,7 +294,7 @@ export default function VideoCall() {
     if (currentState.peerSocketId && !isPartnerDisconnect) {
       socketService.emit('skip', { peerSocketId: currentState.peerSocketId });
     }
-    handleStartSearch(/* currentState.peerSocketId */);
+    handleStartSearch(currentState.peerSocketId);
   };
 
   const handleEndCall = () => {
