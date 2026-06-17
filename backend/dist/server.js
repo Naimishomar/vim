@@ -13,6 +13,12 @@ const redis_1 = require("@upstash/redis");
 const env_1 = require("./config/env");
 const auth_routes_1 = __importDefault(require("./routes/auth.routes"));
 const webrtc_routes_1 = __importDefault(require("./routes/webrtc.routes"));
+const payment_routes_1 = __importDefault(require("./routes/payment.routes"));
+const user_routes_1 = __importDefault(require("./routes/user.routes"));
+const oauth_routes_1 = __importDefault(require("./routes/oauth.routes"));
+const upload_routes_1 = __importDefault(require("./routes/upload.routes"));
+const chat_routes_1 = __importDefault(require("./routes/chat.routes"));
+const passport_1 = __importDefault(require("./config/passport"));
 const app = (0, express_1.default)();
 exports.app = app;
 const httpServer = (0, http_1.createServer)(app);
@@ -24,9 +30,18 @@ const corsOptions = {
 };
 app.use((0, cors_1.default)(corsOptions));
 app.use(express_1.default.json());
+app.use(passport_1.default.initialize());
 // Routes
 app.use('/api/auth', auth_routes_1.default);
 app.use('/api/webrtc', webrtc_routes_1.default);
+app.use('/api/payment', payment_routes_1.default);
+app.use('/api/users', user_routes_1.default);
+app.use('/api/oauth', oauth_routes_1.default);
+app.use('/api/upload', upload_routes_1.default);
+app.use('/api/chat', chat_routes_1.default);
+app.get("/", (req, res) => {
+    res.send("Vibe server never gets down🚀🚀");
+});
 // ─── Database Connection ───
 const connectDB = async () => {
     try {

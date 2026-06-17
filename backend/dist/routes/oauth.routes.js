@@ -11,8 +11,9 @@ const router = (0, express_1.Router)();
 // Helper to generate tokens and redirect
 const handleAuthSuccess = (req, res) => {
     const user = req.user;
+    const frontendUrl = process.env.NODE_ENV === 'production' ? 'https://vibelly.vercel.app' : (process.env.FRONTEND_URL || 'http://localhost:5173');
     if (!user) {
-        return res.redirect(`${process.env.FRONTEND_URL || 'http://localhost:5173'}?error=auth_failed`);
+        return res.redirect(`${frontendUrl}?error=auth_failed`);
     }
     const payload = {
         id: user._id,
@@ -26,7 +27,7 @@ const handleAuthSuccess = (req, res) => {
     const accessToken = jsonwebtoken_1.default.sign(payload, env_1.ENV.JWT_SECRET, { expiresIn: '15m' });
     const refreshToken = jsonwebtoken_1.default.sign(payload, env_1.ENV.JWT_REFRESH_SECRET, { expiresIn: '7d' });
     // Redirect to frontend callback route with tokens
-    const redirectUrl = `${process.env.FRONTEND_URL || 'http://localhost:5173'}/oauth-callback?accessToken=${accessToken}&refreshToken=${refreshToken}`;
+    const redirectUrl = `${frontendUrl}/oauth-callback?accessToken=${accessToken}&refreshToken=${refreshToken}`;
     res.redirect(redirectUrl);
 };
 // ─── GOOGLE ───

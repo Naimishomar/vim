@@ -99,9 +99,36 @@ export const addToQueue = async (socketId: string, userId: string, baseQueueName
     }
   }
 
+  // Fallback: If no match found but we skipped someone previously, let's allow matching with them
+  // so we don't wait infinitely in a 2-person queue.
+  if (!peerData && previousPeerSocketId) {
+    for (const q of queuesToCheck) {
+      const list = await redisClient.lrange<string>(q, 0, -1);
+      const parsedList = list.map(item => {
+        if (typeof item === 'object') return { ...(item as any), original: item };
+        const [sId, uId, ctry] = item.split('|');
+        return { socketId: sId, userId: uId, country: ctry, original: item };
+      });
+
+      const matches = isPremium && targetCountry 
+        ? parsedList.filter(u => u && u.country?.toLowerCase() === targetCountry.toLowerCase() && u.socketId !== socketId && u.userId !== userId)
+        : parsedList.filter(u => u && u.socketId !== socketId && u.userId !== userId);
+
+      for (const match of matches) {
+        const removedCount = await redisClient.lrem(q, 1, match.original);
+        if (removedCount > 0) {
+          peerData = match;
+          matchedQueue = q;
+          break;
+        }
+      }
+      if (peerData) break;
+    }
+  }
+
   if (peerData) {
     // Don't match with ourselves (same user ID or same socket connection)
-    if (peerData.userId === userId || peerData.socketId === socketId || peerData.socketId === previousPeerSocketId) {
+    if (peerData.userId === userId || peerData.socketId === socketId) {
       // Discard this ghost and recursively try to find a real partner.
       return addToQueue(socketId, userId, baseQueueName, targetCountry, targetGender, previousPeerSocketId);
     }

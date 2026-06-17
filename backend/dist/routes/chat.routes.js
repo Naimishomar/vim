@@ -52,5 +52,18 @@ router.get('/history/:userId/:peerId', async (req, res) => {
         res.status(500).json({ error: 'Failed to fetch chat history' });
     }
 });
+// DELETE /api/chat/history/:userId/:peerId - Clear chat history between two users
+router.delete('/history/:userId/:peerId', async (req, res) => {
+    try {
+        const { userId, peerId } = req.params;
+        const conversationKey = `chat:${[userId, peerId].sort().join(':')}`;
+        await server_1.redisClient.del(conversationKey);
+        res.json({ success: true, message: 'Chat history cleared' });
+    }
+    catch (error) {
+        console.error('Error deleting chat history:', error);
+        res.status(500).json({ error: 'Failed to clear chat history' });
+    }
+});
 exports.default = router;
 //# sourceMappingURL=chat.routes.js.map

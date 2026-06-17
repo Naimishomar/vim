@@ -8,7 +8,7 @@ const server_1 = require("../server");
 const uuid_1 = require("uuid");
 const Session_1 = __importDefault(require("../models/Session"));
 const User_1 = __importDefault(require("../models/User"));
-const addToQueue = async (socketId, userId, baseQueueName, targetCountry, targetGender) => {
+const addToQueue = async (socketId, userId, baseQueueName, targetCountry, targetGender, previousPeerSocketId) => {
     let userGender = 'unspecified';
     let isPremium = false;
     let myCountry = 'unspecified';
@@ -62,27 +62,79 @@ const addToQueue = async (socketId, userId, baseQueueName, targetCountry, target
         if (isPremium && targetCountry) {
             // If targetCountry is specified, find the first user from that country
             const list = await server_1.redisClient.lrange(q, 0, -1);
-            const match = list.find(u => u && u.country?.toLowerCase() === targetCountry.toLowerCase());
-            if (match) {
-                await server_1.redisClient.lrem(q, 1, match);
-                peerData = match;
-                matchedQueue = q;
-                break;
+            const parsedList = list.map(item => {
+                if (typeof item === 'object')
+                    return { ...item, original: item };
+                const [sId, uId, ctry] = item.split('|');
+                return { socketId: sId, userId: uId, country: ctry, original: item };
+            });
+            const matches = parsedList.filter(u => u && u.country?.toLowerCase() === targetCountry.toLowerCase());
+            for (const match of matches) {
+                if (match && match.socketId !== previousPeerSocketId && match.socketId !== socketId) {
+                    const removedCount = await server_1.redisClient.lrem(q, 1, match.original);
+                    if (removedCount > 0) {
+                        peerData = match;
+                        matchedQueue = q;
+                        break;
+                    }
+                }
             }
+            if (peerData)
+                break;
         }
         else {
-            peerData = await server_1.redisClient.lpop(q);
-            if (peerData) {
-                matchedQueue = q;
-                break;
+            // Find the first peer that is NOT ourselves and NOT the previous peer
+            const list = await server_1.redisClient.lrange(q, 0, -1);
+            const parsedList = list.map(item => {
+                if (typeof item === 'object')
+                    return { ...item, original: item };
+                const [sId, uId, ctry] = item.split('|');
+                return { socketId: sId, userId: uId, country: ctry, original: item };
+            });
+            const matches = parsedList.filter(u => u && u.socketId !== socketId && u.socketId !== previousPeerSocketId && u.userId !== userId);
+            for (const match of matches) {
+                const removedCount = await server_1.redisClient.lrem(q, 1, match.original);
+                if (removedCount > 0) {
+                    peerData = match;
+                    matchedQueue = q;
+                    break;
+                }
             }
+            if (peerData)
+                break;
+        }
+    }
+    // Fallback: If no match found but we skipped someone previously, let's allow matching with them
+    // so we don't wait infinitely in a 2-person queue.
+    if (!peerData && previousPeerSocketId) {
+        for (const q of queuesToCheck) {
+            const list = await server_1.redisClient.lrange(q, 0, -1);
+            const parsedList = list.map(item => {
+                if (typeof item === 'object')
+                    return { ...item, original: item };
+                const [sId, uId, ctry] = item.split('|');
+                return { socketId: sId, userId: uId, country: ctry, original: item };
+            });
+            const matches = isPremium && targetCountry
+                ? parsedList.filter(u => u && u.country?.toLowerCase() === targetCountry.toLowerCase() && u.socketId !== socketId && u.userId !== userId)
+                : parsedList.filter(u => u && u.socketId !== socketId && u.userId !== userId);
+            for (const match of matches) {
+                const removedCount = await server_1.redisClient.lrem(q, 1, match.original);
+                if (removedCount > 0) {
+                    peerData = match;
+                    matchedQueue = q;
+                    break;
+                }
+            }
+            if (peerData)
+                break;
         }
     }
     if (peerData) {
         // Don't match with ourselves (same user ID or same socket connection)
         if (peerData.userId === userId || peerData.socketId === socketId) {
             // Discard this ghost and recursively try to find a real partner.
-            return (0, exports.addToQueue)(socketId, userId, baseQueueName, targetCountry, targetGender);
+            return (0, exports.addToQueue)(socketId, userId, baseQueueName, targetCountry, targetGender, previousPeerSocketId);
         }
         // Match found!
         console.log(`Match found between ${userId} and ${peerData.userId}!`);
@@ -115,12 +167,16 @@ const addToQueue = async (socketId, userId, baseQueueName, targetCountry, target
             peerData: user1Data,
             isInitiator: false,
         });
+        // Track active match so we can handle unexpected disconnects
+        await server_1.redisClient.set(`activeMatch:${socketId}`, peerData.socketId);
+        await server_1.redisClient.set(`activeMatch:${peerData.socketId}`, socketId);
     }
     else {
         // No one waiting — add self to queue
         const myQueue = `${baseQueueName}:${userGender}`;
         console.log(`No match found. User ${userId} is waiting in queue ${myQueue}.`);
-        await server_1.redisClient.rpush(myQueue, { socketId, userId, country: myCountry });
+        const queueItem = `${socketId}|${userId}|${myCountry}`;
+        await server_1.redisClient.rpush(myQueue, queueItem);
     }
 };
 exports.addToQueue = addToQueue;
@@ -129,7 +185,14 @@ const removeFromQueue = async (socketId, baseQueueName) => {
     for (const q of queues) {
         const list = await server_1.redisClient.lrange(q, 0, -1);
         for (const data of list) {
-            if (data && data.socketId === socketId) {
+            let currentSocketId = '';
+            if (typeof data === 'object') {
+                currentSocketId = data.socketId;
+            }
+            else if (typeof data === 'string') {
+                currentSocketId = data.split('|')[0] || '';
+            }
+            if (currentSocketId === socketId) {
                 await server_1.redisClient.lrem(q, 1, data);
                 break;
             }

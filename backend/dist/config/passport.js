@@ -54,7 +54,7 @@ if (process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_ID !== 'your_googl
     passport_1.default.use(new passport_google_oauth20_1.Strategy({
         clientID: process.env.GOOGLE_CLIENT_ID,
         clientSecret: process.env.GOOGLE_CLIENT_SECRET,
-        callbackURL: '/api/oauth/google/callback'
+        callbackURL: process.env.NODE_ENV === 'production' ? 'https://vibes-api.duckdns.org/api/oauth/google/callback' : '/api/oauth/google/callback'
     }, (accessToken, refreshToken, profile, done) => {
         handleOAuthUser('googleId', profile, done);
     }));
@@ -64,7 +64,7 @@ if (process.env.GITHUB_CLIENT_ID && process.env.GITHUB_CLIENT_ID !== 'your_githu
     passport_1.default.use(new passport_github2_1.Strategy({
         clientID: process.env.GITHUB_CLIENT_ID,
         clientSecret: process.env.GITHUB_CLIENT_SECRET,
-        callbackURL: '/api/oauth/github/callback',
+        callbackURL: process.env.NODE_ENV === 'production' ? 'https://vibes-api.duckdns.org/api/oauth/github/callback' : '/api/oauth/github/callback',
         scope: ['user:email']
     }, (accessToken, refreshToken, profile, done) => {
         handleOAuthUser('githubId', profile, done);

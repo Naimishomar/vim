@@ -6,6 +6,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 const express_1 = __importDefault(require("express"));
 const User_1 = __importDefault(require("../models/User"));
 const auth_middleware_1 = require("../middlewares/auth.middleware");
+const Report_1 = __importDefault(require("../models/Report"));
 const router = express_1.default.Router();
 router.put('/profile', auth_middleware_1.requireAuth, async (req, res) => {
     try {
@@ -38,6 +39,27 @@ router.get('/me', auth_middleware_1.requireAuth, async (req, res) => {
     catch (error) {
         console.error('Error fetching profile:', error);
         res.status(500).json({ error: 'Failed to fetch profile' });
+    }
+});
+// Endpoint to report a user
+router.post('/report', auth_middleware_1.requireAuth, async (req, res) => {
+    try {
+        const { reportedUserId, reason } = req.body;
+        const reporterId = req.user.id;
+        if (!reportedUserId) {
+            return res.status(400).json({ error: 'Reported user ID is required' });
+        }
+        const report = new Report_1.default({
+            reporter: reporterId,
+            reportedUser: reportedUserId,
+            reason: reason || 'Inappropriate behavior'
+        });
+        await report.save();
+        res.json({ success: true, message: 'User reported successfully' });
+    }
+    catch (error) {
+        console.error('Error reporting user:', error);
+        res.status(500).json({ error: 'Failed to report user' });
     }
 });
 exports.default = router;
