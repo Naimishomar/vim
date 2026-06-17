@@ -12,6 +12,7 @@ export default function GlobalChat() {
   const [socket, setSocket] = useState<Socket | null>(null);
   const [onlineUsers, setOnlineUsers] = useState<any[]>([]);
   const [selectedUser, setSelectedUser] = useState<any | null>(null);
+  const [showSidebar, setShowSidebar] = useState(true);
   const [unreadCounts, setUnreadCounts] = useState<{ [userId: string]: number }>({});
   const [searchTerm, setSearchTerm] = useState('');
   const handleClearChat = async (e: React.MouseEvent, targetUserId: string) => {
@@ -172,7 +173,7 @@ export default function GlobalChat() {
       <div className="flex-1 flex w-full relative z-10 overflow-hidden border-t border-white/5 bg-[#15171B]">
         
         {/* Sidebar */}
-        <div className="w-[380px] bg-[#0A0A0A] border-r border-white/5 flex flex-col z-20 shrink-0">
+        <div className={`w-full md:w-[380px] bg-[#0A0A0A] border-r border-white/5 flex flex-col z-20 shrink-0 ${!showSidebar ? 'hidden md:flex' : ''}`}>
           <div className="p-8 pb-6 border-b border-white/5">
             <div className="flex items-center justify-between mb-6">
               <h2 className="text-2xl font-normal flex items-center gap-2" style={{ fontFamily: '"Playfair Display", Georgia, serif' }}>
@@ -210,6 +211,7 @@ export default function GlobalChat() {
                     onClick={() => {
                       setSelectedUser(u);
                       setUnreadCounts(prev => ({ ...prev, [u.userId]: 0 }));
+                      setShowSidebar(false);
                     }}
                     className={`w-full flex items-center gap-4 p-3 rounded-xl transition-all duration-300 border group ${
                       selectedUser?.userId === u.userId 
@@ -255,7 +257,9 @@ export default function GlobalChat() {
         </div>
 
         {/* Main Chat Area */}
-        <DirectChatWindow socket={socket} currentUser={user} selectedUser={selectedUser} />
+        <div className={`flex-1 w-full ${showSidebar ? 'hidden md:flex' : 'flex'}`}>
+          <DirectChatWindow socket={socket} currentUser={user} selectedUser={selectedUser} onBack={() => setShowSidebar(true)} />
+        </div>
 
       </div>
     </div>

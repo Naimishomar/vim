@@ -11,6 +11,7 @@ import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuthStore } from '../store/useAuthStore';
 import LightRays from '../components/LightRays';
 import SEO from '../components/SEO';
+import BlinkingDotsGrid from '../components/BlinkingDotsGrid';
 
 const MEDIA_ERROR_MESSAGES: Record<MediaErrorCode, string> = {
   'not-supported': 'Your browser does not support camera access. Try Chrome or Firefox on HTTPS/localhost.',
@@ -418,13 +419,7 @@ export default function VideoCall() {
       <div className="absolute inset-0 bg-[#15171B] flex items-center justify-center">
         {/* ─── Dot Grid ─── */}
         {(isSearching || !isMatched) && (
-          <div
-            className="absolute inset-0 z-0 pointer-events-none opacity-[0.10]"
-            style={{
-              backgroundImage: 'radial-gradient(circle at center, white 1.5px, transparent 1.5px)',
-              backgroundSize: '32px 32px',
-            }}
-          />
+          <BlinkingDotsGrid />
         )}
         {isSearching || !isMatched ? (
           <motion.div
@@ -566,35 +561,35 @@ export default function VideoCall() {
         </div>
       )}
 
-      <div className="absolute bottom-8 left-1/2 -translate-x-1/2 z-10 flex items-center gap-3 bg-zinc-900/80 backdrop-blur-xl p-3 rounded-full border border-white/10 shadow-2xl">
+      <div className="absolute bottom-6 md:bottom-8 left-1/2 -translate-x-1/2 z-10 flex items-center gap-2 md:gap-3 bg-zinc-900/80 backdrop-blur-xl p-2 md:p-3 rounded-full border border-white/10 shadow-2xl w-[95%] md:w-auto justify-center md:justify-start">
 
         <motion.button
           whileTap={{ scale: 0.9 }}
           onClick={toggleMic}
-          className={`cursor-pointer p-3.5 rounded-full transition-colors ${isMicOn ? 'bg-zinc-800 hover:bg-zinc-700 text-white' : 'bg-red-500/20 text-red-400 hover:bg-red-500/30 ring-1 ring-red-500/50'}`}
+          className={`cursor-pointer p-3 md:p-3.5 rounded-full transition-colors ${isMicOn ? 'bg-zinc-800 hover:bg-zinc-700 text-white' : 'bg-red-500/20 text-red-400 hover:bg-red-500/30 ring-1 ring-red-500/50'}`}
           title={isMicOn ? 'Mute mic' : 'Unmute mic'}
         >
-          {isMicOn ? <Mic size={22} /> : <MicOff size={22} />}
+          {isMicOn ? <Mic size={20} className="md:w-[22px] md:h-[22px]" /> : <MicOff size={20} className="md:w-[22px] md:h-[22px]" />}
         </motion.button>
 
         {!isAudioOnly && (
           <motion.button
             whileTap={{ scale: 0.9 }}
             onClick={() => void toggleVideo()}
-            className={`cursor-pointer p-3.5 rounded-full transition-colors ${isVideoOn ? 'bg-zinc-800 hover:bg-zinc-700 text-white' : 'bg-red-500/20 text-red-400 hover:bg-red-500/30 ring-1 ring-red-500/50'}`}
+            className={`cursor-pointer p-3 md:p-3.5 rounded-full transition-colors ${isVideoOn ? 'bg-zinc-800 hover:bg-zinc-700 text-white' : 'bg-red-500/20 text-red-400 hover:bg-red-500/30 ring-1 ring-red-500/50'}`}
             title={isVideoOn ? 'Turn off camera' : 'Turn on camera'}
           >
-            {isVideoOn ? <Video size={22} /> : <VideoOff size={22} />}
+            {isVideoOn ? <Video size={20} className="md:w-[22px] md:h-[22px]" /> : <VideoOff size={20} className="md:w-[22px] md:h-[22px]" />}
           </motion.button>
         )}
 
         <motion.button
           whileTap={{ scale: 0.9 }}
           onClick={() => setIsChatOpen((o) => !o)}
-          className="cursor-pointer relative p-3.5 rounded-full bg-zinc-800 hover:bg-zinc-700 transition-colors text-white"
+          className="cursor-pointer relative p-3 md:p-3.5 rounded-full bg-zinc-800 hover:bg-zinc-700 transition-colors text-white"
           title="Toggle chat"
         >
-          <MessageSquare size={22} />
+          <MessageSquare size={20} className="md:w-[22px] md:h-[22px]" />
           {unreadCount > 0 && (
             <span className="absolute -top-1 -right-1 w-5 h-5 bg-violet-500 rounded-full text-[10px] font-bold flex items-center justify-center text-white">
               {unreadCount}
@@ -605,42 +600,42 @@ export default function VideoCall() {
         <motion.button
           whileTap={{ scale: 0.9 }}
           onClick={handleEndCall}
-          className="cursor-pointer p-3.5 rounded-full bg-red-500 hover:bg-red-600 transition-colors text-white shadow-lg shadow-red-500/30"
+          className="cursor-pointer p-3 md:p-3.5 rounded-full bg-red-500 hover:bg-red-600 transition-colors text-white shadow-lg shadow-red-500/30"
           title="End call"
         >
-          <PhoneOff size={22} />
+          <PhoneOff size={20} className="md:w-[22px] md:h-[22px]" />
         </motion.button>
 
-        <div className="w-px h-8 bg-white/20 mx-1" />
+        <div className="w-px h-8 bg-white/20 mx-1 hidden sm:block" />
 
         <motion.button
           whileTap={{ scale: 0.9 }}
           onClick={() => handleSkip(false)}
-          className="cursor-pointer px-5 py-3 rounded-full bg-white hover:bg-zinc-200 transition-colors text-black font-semibold text-sm flex items-center gap-2 shadow-lg shadow-white/10"
+          className="cursor-pointer px-4 md:px-5 py-2.5 md:py-3 rounded-full bg-white hover:bg-zinc-200 transition-colors text-black font-semibold text-sm flex items-center gap-2 shadow-lg shadow-white/10"
           title="Skip to next person"
         >
           Next
-          <SkipForward size={18} />
+          <SkipForward size={16} className="md:w-[18px] md:h-[18px]" />
         </motion.button>
 
         <motion.button
           whileTap={{ scale: 0.9 }}
           onClick={handleReport}
-          className="cursor-pointer p-3.5 rounded-full bg-zinc-800 hover:bg-zinc-700 transition-colors text-zinc-500 hover:text-orange-400"
+          className="cursor-pointer p-3 md:p-3.5 rounded-full bg-zinc-800 hover:bg-zinc-700 transition-colors text-zinc-500 hover:text-orange-400 hidden sm:block"
           title="Report user"
         >
-          <AlertTriangle size={22} />
+          <AlertTriangle size={20} className="md:w-[22px] md:h-[22px]" />
         </motion.button>
       </div>
 
       <AnimatePresence>
         {isChatOpen && (
           <motion.div
-            initial={{ x: '100%' }}
-            animate={{ x: 0 }}
-            exit={{ x: '100%' }}
+            initial={{ opacity: 0, y: 50 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: 50 }}
             transition={{ type: 'spring', damping: 25, stiffness: 260 }}
-            className="absolute top-0 right-0 bottom-0 w-80 bg-zinc-900/95 backdrop-blur-xl border-l border-white/10 flex flex-col z-20 shadow-2xl"
+            className="fixed inset-x-0 bottom-0 top-[30%] md:absolute md:inset-auto md:top-0 md:right-0 md:bottom-0 md:w-80 bg-zinc-900/95 backdrop-blur-xl border-t md:border-t-0 md:border-l border-white/10 flex flex-col z-20 shadow-[0_-10px_40px_rgba(0,0,0,0.5)] md:shadow-2xl rounded-t-3xl md:rounded-none"
           >
             <div className="flex items-center justify-between px-4 py-3 border-b border-white/10">
               <div className="flex items-center gap-2">

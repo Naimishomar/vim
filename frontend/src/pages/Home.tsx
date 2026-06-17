@@ -179,7 +179,7 @@ export default function Home() {
         {/* ══════════════════════════════════════════
             SECTION 1 — HERO
         ══════════════════════════════════════════ */}
-        <section className="flex flex-col items-center justify-center text-center px-6 pt-24 pb-32 max-w-4xl mx-auto w-full">
+        <section className="flex flex-col items-center justify-center text-center px-6 pt-12 pb-16 md:pt-24 md:pb-32 max-w-4xl mx-auto w-full">
 
           <motion.p
             initial={{ opacity: 0, y: 10 }}
@@ -206,7 +206,7 @@ export default function Home() {
             initial={{ opacity: 0, y: 18 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.15 }}
-            className="text-base text-zinc-400 mb-10 max-w-xl leading-relaxed text-xl"
+            className="text-lg md:text-xl text-zinc-400 mb-10 max-w-xl leading-relaxed"
           >
             Anonymous real-time video and voice calls with strangers from around the world.
             No sign-up. No profile. Just press start.
@@ -243,7 +243,7 @@ export default function Home() {
             initial={{ opacity: 0, y: 20 }}
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true }}
-            className="text-4xl md:text-6xl font-normal text-center max-w-3xl leading-tight mb-20 z-20 relative"
+            className="text-4xl md:text-6xl font-normal text-center max-w-3xl leading-tight mb-12 md:mb-20 z-20 relative"
             style={{ fontFamily: '"Playfair Display", "Merriweather", "Lora", ui-serif, Georgia, Cambria, "Times New Roman", Times, serif' }}
           >
             One platform for all your spontaneous connections

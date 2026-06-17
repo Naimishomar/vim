@@ -6,6 +6,7 @@ interface DirectChatWindowProps {
   socket: any;
   currentUser: any;
   selectedUser: any;
+  onBack?: () => void;
 }
 
 interface Message {
@@ -17,7 +18,7 @@ interface Message {
   timestamp: string;
 }
 
-export default function DirectChatWindow({ socket, currentUser, selectedUser }: DirectChatWindowProps) {
+export default function DirectChatWindow({ socket, currentUser, selectedUser, onBack }: DirectChatWindowProps) {
   const [messages, setMessages] = useState<Message[]>([]);
   const [inputText, setInputText] = useState('');
   const [isUploading, setIsUploading] = useState(false);
@@ -215,8 +216,16 @@ export default function DirectChatWindow({ socket, currentUser, selectedUser }: 
   return (
     <div className="flex-1 flex flex-col bg-transparent border-l border-white/5 relative z-10 overflow-hidden">
       {/* Header */}
-      <div className="h-20 border-b border-white/5 flex items-center px-8 bg-[#0A0A0A] z-20 sticky top-0">
-        <div className="relative">
+      <div className="h-20 border-b border-white/5 flex items-center px-4 md:px-8 bg-[#0A0A0A] z-20 sticky top-0 gap-3">
+        {onBack && (
+          <button 
+            onClick={onBack}
+            className="md:hidden p-2 text-zinc-400 hover:text-white"
+          >
+            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m15 18-6-6 6-6"/></svg>
+          </button>
+        )}
+        <div className="relative shrink-0">
           <div className={`w-12 h-12 rounded-full border bg-[#1A1A1A] p-0.5 ${selectedUser?.premiumStatus ? 'border-white shadow-[0_0_10px_rgba(255,255,255,0.3)]' : 'border-white/10'}`}>
             <div className="w-full h-full rounded-full bg-[#111] flex items-center justify-center overflow-hidden">
               {selectedUser?.profileImage ? (
