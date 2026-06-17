@@ -1,9 +1,10 @@
 import { Link } from 'react-router-dom';
-import { LogOut, User, Settings, Home as HomeIcon, MessageSquare, Video, Headphones as HeadphonesIcon } from 'lucide-react';
+import { LogOut, User, Settings } from 'lucide-react';
 import { useState, useRef, useEffect } from 'react';
 import { useAuthStore } from '../store/useAuthStore';
 import LoginModal from './LoginModal';
 import SettingsModal from './SettingsModal';
+import BottomNav from './BottomNav';
 import { useNavigate } from 'react-router-dom';
 
 export default function Navbar() {
@@ -143,25 +144,7 @@ export default function Navbar() {
         </div>
       </nav>
 
-      {/* Mobile Bottom Navigation */}
-      <div className="md:hidden fixed bottom-0 left-0 right-0 bg-[#111]/90 backdrop-blur-xl border-t border-white/10 z-50 px-6 py-3 flex justify-between items-center pb-safe">
-        <Link to="/" className="flex flex-col items-center gap-1 text-zinc-400 hover:text-white transition-colors">
-          <HomeIcon size={20} />
-          <span className="text-[10px] font-medium">Home</span>
-        </Link>
-        <button onClick={() => handleProtectedAction('/chat')} className="flex flex-col items-center gap-1 text-zinc-400 hover:text-white transition-colors cursor-pointer">
-          <MessageSquare size={20} />
-          <span className="text-[10px] font-medium">Chat</span>
-        </button>
-        <button onClick={() => handleProtectedAction('/setup/video')} className="flex flex-col items-center gap-1 text-zinc-400 hover:text-white transition-colors cursor-pointer">
-          <Video size={20} />
-          <span className="text-[10px] font-medium">Video</span>
-        </button>
-        <button onClick={() => handleProtectedAction('/setup/audio')} className="flex flex-col items-center gap-1 text-zinc-400 hover:text-white transition-colors cursor-pointer">
-          <HeadphonesIcon size={20} />
-          <span className="text-[10px] font-medium">Audio</span>
-        </button>
-      </div>
+      <BottomNav onRequiresAuth={() => setIsLoginModalOpen(true)} />
 
       <LoginModal isOpen={isLoginModalOpen} onClose={() => setIsLoginModalOpen(false)} />
       {isSettingsModalOpen && <SettingsModal onClose={() => setIsSettingsModalOpen(false)} />}

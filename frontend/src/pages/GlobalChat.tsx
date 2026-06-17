@@ -6,6 +6,8 @@ import { useAuthStore } from '../store/useAuthStore';
 import DirectChatWindow from '../components/Chat/DirectChatWindow';
 import SEO from '../components/SEO';
 import BlinkingDotsGrid from '../components/BlinkingDotsGrid';
+import BottomNav from '../components/BottomNav';
+import { useNavigate } from 'react-router-dom';
 
 export default function GlobalChat() {
   const { user, isAuthenticated } = useAuthStore();
@@ -15,6 +17,7 @@ export default function GlobalChat() {
   const [showSidebar, setShowSidebar] = useState(true);
   const [unreadCounts, setUnreadCounts] = useState<{ [userId: string]: number }>({});
   const [searchTerm, setSearchTerm] = useState('');
+  const navigate = useNavigate();
   const handleClearChat = async (e: React.MouseEvent, targetUserId: string) => {
     e.stopPropagation();
     
@@ -253,15 +256,33 @@ export default function GlobalChat() {
                 ))
               )}
             </div>
+            {/* Padding for BottomNav on mobile */}
+            <div className="h-16 md:hidden"></div>
           </div>
         </div>
 
         {/* Main Chat Area */}
-        <div className={`flex-1 w-full ${showSidebar ? 'hidden md:flex' : 'flex'}`}>
-          <DirectChatWindow socket={socket} currentUser={user} selectedUser={selectedUser} onBack={() => setShowSidebar(true)} />
-        </div>
+        {selectedUser ? (
+          <div className={`flex-1 w-full ${showSidebar ? 'hidden md:flex' : 'flex'}`}>
+            <DirectChatWindow socket={socket} currentUser={user} selectedUser={selectedUser} onBack={() => setShowSidebar(true)} />
+          </div>
+        ) : (
+          <div className="hidden md:flex flex-1 flex-col items-center justify-center bg-transparent relative overflow-hidden">
+            <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[500px] h-[500px] bg-white/5 rounded-full blur-[120px] pointer-events-none" />
+            
+            <div className="bg-[#131313] p-8 rounded-3xl border border-white/10 flex flex-col items-center shadow-2xl relative z-10 text-center">
+              <Users size={32} className="text-zinc-500 mb-4" />
+              <h2 className="text-xl text-white font-medium mb-2">Select a Conversation</h2>
+              <p className="text-zinc-500 text-sm">Choose someone from the list to start chatting.</p>
+            </div>
+          </div>
+        )}
 
       </div>
+
+      {!selectedUser && (
+        <BottomNav onRequiresAuth={() => navigate('/')} />
+      )}
     </div>
   );
 }
