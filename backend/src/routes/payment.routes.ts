@@ -17,7 +17,7 @@ router.post('/create-order', requireAuth, async (req, res) => {
     const { amount } = req.body;
     
     // VALIDATION: Prevent users from passing arbitrary amounts (e.g. 1 INR) to get premium.
-    const validAmounts = [49, 199, 499, 1499];
+    const validAmounts = [9, 49, 499];
     if (!amount || typeof amount !== 'number' || !validAmounts.includes(amount)) {
       return res.status(400).json({ error: 'Invalid or missing amount' });
     }
@@ -57,10 +57,9 @@ router.post('/verify', requireAuth, async (req, res) => {
         let daysToAdd = 0;
         
         // STRICT MAPPING: Only award days if the amount precisely matches our known plans
-        if (amountPaid === 49) daysToAdd = 1;
-        else if (amountPaid === 199) daysToAdd = 30;
-        else if (amountPaid === 499) daysToAdd = 90;
-        else if (amountPaid === 1499) daysToAdd = 365;
+        if (amountPaid === 9) daysToAdd = 1;
+        else if (amountPaid === 49) daysToAdd = 30;
+        else if (amountPaid === 499) daysToAdd = 365;
         else {
           console.error(`Invalid payment amount detected: ${amountPaid} for user ${user._id}`);
           return res.status(400).json({ success: false, message: "Invalid payment amount detected." });

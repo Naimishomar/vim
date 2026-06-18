@@ -159,7 +159,7 @@ export default function Pricing() {
               paymentId: response.razorpay_payment_id,
               orderId: response.razorpay_order_id,
               date: new Date().toLocaleString(),
-              plan: planPriceStr === '₹1499' ? 'Premium (Annual)' : planPriceStr === '₹199' ? 'Premium (Monthly)' : 'Premium (Daily)'
+              plan: planPriceStr === '₹499' ? 'Premium (Annual)' : planPriceStr === '₹49' ? 'Premium (Monthly)' : 'Premium (Daily)'
             });
           } else {
             alert('Payment Verification Failed!');
@@ -201,7 +201,7 @@ export default function Pricing() {
     {
       name: 'Premium',
       subtitle: 'For the ultimate experience',
-      price: isAnnual ? '₹1499' : '₹199',
+      price: isAnnual ? '₹499' : '₹49',
       period: isAnnual ? '/year' : '/month',
       highlight: true,
       buttonText: 'Get started',
@@ -219,7 +219,7 @@ export default function Pricing() {
     {
       name: 'Daily',
       subtitle: 'Try premium for a day',
-      price: '₹49',
+      price: '₹9',
       period: '/day',
       highlight: false,
       buttonText: 'Get started',
