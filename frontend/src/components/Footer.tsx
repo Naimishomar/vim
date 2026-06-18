@@ -36,15 +36,15 @@ export default function Footer() {
           <h4 className="text-white font-semibold mb-2">Contact Us</h4>
           <div className="flex items-start gap-3 text-zinc-400">
             <MapPin className="w-5 h-5 shrink-0 text-white mt-0.5" />
-            <p>123 Innovation Drive, Tech Park<br/>Silicon Valley, CA 94025<br/>United States</p>
+            <p>K Block ,<br/>Near Ratanlal Garden<br/>Kanpur, Uttar Pradesh<br/>India</p>
           </div>
           <div className="flex items-center gap-3 text-zinc-400">
             <Mail className="w-5 h-5 shrink-0 text-white" />
-            <p>support@vibeapp.com</p>
+            <p>vibellyofficial@gmail.com</p>
           </div>
           <div className="flex items-center gap-3 text-zinc-400">
             <Phone className="w-5 h-5 shrink-0 text-white" />
-            <p>+1 (555) 123-4567</p>
+            <p>Will Disclosed Soon</p>
           </div>
         </div>
 
