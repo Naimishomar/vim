@@ -16,8 +16,10 @@ router.post('/create-order', requireAuth, async (req, res) => {
   try {
     const { amount } = req.body;
     
-    if (!amount) {
-      return res.status(400).json({ error: 'Amount is required' });
+    // VALIDATION: Prevent users from passing arbitrary amounts (e.g. 1 INR) to get premium.
+    const validAmounts = [49, 199, 499, 1499];
+    if (!amount || typeof amount !== 'number' || !validAmounts.includes(amount)) {
+      return res.status(400).json({ error: 'Invalid or missing amount' });
     }
 
     const options = {
@@ -48,25 +50,32 @@ router.post('/verify', requireAuth, async (req, res) => {
       // Payment is successful, upgrade user to premium
       const user = await User.findById((req as any).user.id);
       if (user) {
-        // Fetch order to get the amount paid
+        // Fetch order to verify the exact amount paid against our system
         const order = await razorpay.orders.fetch(razorpay_order_id);
         const amountPaid = (order as any).amount / 100;
         
-        let daysToAdd = 30; // default for 199
+        let daysToAdd = 0;
+        
+        // STRICT MAPPING: Only award days if the amount precisely matches our known plans
         if (amountPaid === 49) daysToAdd = 1;
-        if (amountPaid === 499) daysToAdd = 90;
-        if (amountPaid === 1499) daysToAdd = 365;
+        else if (amountPaid === 199) daysToAdd = 30;
+        else if (amountPaid === 499) daysToAdd = 90;
+        else if (amountPaid === 1499) daysToAdd = 365;
+        else {
+          console.error(`Invalid payment amount detected: ${amountPaid} for user ${user._id}`);
+          return res.status(400).json({ success: false, message: "Invalid payment amount detected." });
+        }
 
         user.premiumStatus = true;
         
         const now = new Date();
         if (user.premiumExpiryDate && user.premiumExpiryDate > now) {
-          // Add to existing
+          // Add to existing premium duration
           const newExpiry = new Date(user.premiumExpiryDate);
           newExpiry.setDate(newExpiry.getDate() + daysToAdd);
           user.premiumExpiryDate = newExpiry;
         } else {
-          // Set new expiry
+          // Set new premium expiry
           const newExpiry = new Date();
           newExpiry.setDate(newExpiry.getDate() + daysToAdd);
           user.premiumExpiryDate = newExpiry;

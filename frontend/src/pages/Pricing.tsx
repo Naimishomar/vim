@@ -1,12 +1,14 @@
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 import { motion } from 'framer-motion';
-import { Check } from 'lucide-react';
+import { Check, Download } from 'lucide-react';
 import Navbar from '../components/Navbar';
 import Footer from '../components/Footer';
 import SEO from '../components/SEO';
 import BlinkingDotsGrid from '../components/BlinkingDotsGrid';
 import { useAuthStore } from '../store/useAuthStore';
 import { useNavigate } from 'react-router-dom';
+import html2canvas from 'html2canvas';
+import jsPDF from 'jspdf';
 
 const loadScript = (src: string) => {
   return new Promise((resolve) => {
@@ -21,8 +23,34 @@ const loadScript = (src: string) => {
 export default function Pricing() {
   const [isAnnual, setIsAnnual] = useState(false);
   const [selectedPlanPrice, setSelectedPlanPrice] = useState<string | null>(null);
+  const [receiptData, setReceiptData] = useState<{
+    amount: string;
+    paymentId: string;
+    orderId: string;
+    date: string;
+    plan: string;
+  } | null>(null);
+  const receiptRef = useRef<HTMLDivElement>(null);
   const { user, isAuthenticated, checkAuth } = useAuthStore();
   const navigate = useNavigate();
+
+  const downloadReceiptPDF = async () => {
+    if (!receiptRef.current) return;
+    try {
+      // Temporarily remove rounded corners for clean PDF edges if needed, but it's fine
+      const canvas = await html2canvas(receiptRef.current, { scale: 2, backgroundColor: '#15171B', useCORS: true });
+      const imgData = canvas.toDataURL('image/png');
+      const pdf = new jsPDF('p', 'mm', 'a4');
+      const pdfWidth = pdf.internal.pageSize.getWidth();
+      const pdfHeight = (canvas.height * pdfWidth) / canvas.width;
+      
+      pdf.addImage(imgData, 'PNG', 0, 0, pdfWidth, pdfHeight);
+      pdf.save(`Vibelly_Receipt_${receiptData?.paymentId}.pdf`);
+    } catch (err) {
+      console.error('Failed to generate PDF', err);
+      alert('Failed to generate PDF');
+    }
+  };
 
   const initiatePayment = (planPrice: string) => {
     if (user?.premiumStatus && user?.premiumExpiryDate) {
@@ -123,9 +151,14 @@ export default function Pricing() {
           }).then(r => r.json());
 
           if (verifyRes.success) {
-            alert('Payment Successful!');
             await checkAuth(); // Refresh user state to show premium status
-            navigate('/');
+            setReceiptData({
+              amount: planPriceStr,
+              paymentId: response.razorpay_payment_id,
+              orderId: response.razorpay_order_id,
+              date: new Date().toLocaleString(),
+              plan: planPriceStr === '₹1499' ? 'Premium (Annual)' : planPriceStr === '₹199' ? 'Premium (Monthly)' : 'Premium (Daily)'
+            });
           } else {
             alert('Payment Verification Failed!');
           }
@@ -365,6 +398,90 @@ export default function Pricing() {
                 className="w-full bg-transparent hover:bg-white/5 border border-white/10 text-white font-medium py-3 rounded-xl transition-colors text-sm"
               >
                 Cancel
+              </button>
+            </div>
+          </motion.div>
+        </div>
+      )}
+
+      {/* Payment Receipt Modal */}
+      {receiptData && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm">
+          <motion.div 
+            initial={{ opacity: 0, scale: 0.95 }}
+            animate={{ opacity: 1, scale: 1 }}
+            className="w-full max-w-md bg-[#15171B] border border-white/20 rounded-3xl overflow-hidden shadow-2xl relative"
+          >
+            {/* The printable receipt area */}
+            <div ref={receiptRef} className="p-8 bg-[#15171B] relative">
+              <div className="flex flex-col items-center mb-6 border-b border-white/10 pb-6">
+                <div className="flex items-center gap-2 mb-4">
+                  <div className="w-10 h-10 rounded-xl bg-white flex items-center justify-center">
+                    <span className="text-black font-bold text-2xl" style={{ fontFamily: '"Playfair Display", Georgia, serif' }}>V</span>
+                  </div>
+                  <span className="text-white font-bold text-2xl tracking-wide" style={{ fontFamily: '"Playfair Display", Georgia, serif' }}>
+                    Vibelly
+                  </span>
+                </div>
+                <div className="w-14 h-14 bg-green-500/20 rounded-full flex items-center justify-center mb-3">
+                  <Check className="text-green-500 w-8 h-8" />
+                </div>
+                <h2 className="text-2xl font-bold text-white mb-1">Payment Successful</h2>
+                <p className="text-zinc-400 text-sm">Thank you for your purchase!</p>
+              </div>
+
+              <div className="space-y-4">
+                <div className="flex justify-between items-center text-sm">
+                  <span className="text-zinc-500">Plan</span>
+                  <span className="text-white font-semibold">{receiptData.plan}</span>
+                </div>
+                <div className="flex justify-between items-center text-sm">
+                  <span className="text-zinc-500">Amount Paid</span>
+                  <span className="text-white font-bold text-lg">{receiptData.amount}</span>
+                </div>
+                <div className="h-px w-full bg-white/10 my-2 border-dashed border-t" />
+                <div className="flex justify-between items-center text-xs">
+                  <span className="text-zinc-500">Date</span>
+                  <span className="text-zinc-300">{receiptData.date}</span>
+                </div>
+                <div className="flex justify-between items-center text-xs">
+                  <span className="text-zinc-500">Order ID</span>
+                  <span className="text-zinc-300 font-mono">{receiptData.orderId}</span>
+                </div>
+                <div className="flex justify-between items-center text-xs">
+                  <span className="text-zinc-500">Transaction ID</span>
+                  <span className="text-zinc-300 font-mono">{receiptData.paymentId}</span>
+                </div>
+                <div className="flex justify-between items-center text-xs">
+                  <span className="text-zinc-500">Account</span>
+                  <span className="text-zinc-300">{user?.email || user?.username}</span>
+                </div>
+              </div>
+              
+              {/* Optional footer note for PDF */}
+              <div className="mt-8 text-center text-[10px] text-zinc-600">
+                <p>This is a computer generated receipt and requires no signature.</p>
+                <p>Vibelly Premium Services</p>
+              </div>
+            </div>
+
+            {/* Action Buttons (Not included in PDF capture) */}
+            <div className="p-6 bg-[#0A0A0A] border-t border-white/5 space-y-3">
+              <button
+                onClick={downloadReceiptPDF}
+                className="w-full flex items-center justify-center gap-2 bg-white hover:bg-zinc-200 text-black font-semibold py-3 rounded-xl transition-colors text-sm"
+              >
+                <Download size={18} />
+                Download Receipt (PDF)
+              </button>
+              <button
+                onClick={() => {
+                  setReceiptData(null);
+                  navigate('/');
+                }}
+                className="w-full bg-transparent hover:bg-white/5 border border-white/10 text-white font-medium py-3 rounded-xl transition-colors text-sm"
+              >
+                Return to Dashboard
               </button>
             </div>
           </motion.div>
