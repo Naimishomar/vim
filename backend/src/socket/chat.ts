@@ -54,9 +54,23 @@ io.on('connection', (socket) => {
         await senderUser.save();
       }
 
+      // Look up target's socketId dynamically to ensure real-time delivery
+      // even if the sender didn't have the target's socketId
+      const onlineUsers = await redisClient.hvals('online:users');
+      let actualTargetSocketId = targetSocketId;
+
+      for (const rawUser of onlineUsers) {
+        if (!rawUser) continue;
+        const u = typeof rawUser === 'string' ? JSON.parse(rawUser) : rawUser;
+        if (u.userId === targetUserId) {
+          actualTargetSocketId = u.socketId;
+          break;
+        }
+      }
+
       // Forward to recipient via Socket if they have an active socket
-      if (targetSocketId) {
-        io.to(targetSocketId).emit('receive-direct-message', msgObj);
+      if (actualTargetSocketId) {
+        io.to(actualTargetSocketId).emit('receive-direct-message', msgObj);
       }
       
       // Push to the list (Upstash auto stringifies objects if using proper SDK, but we'll stringify to be safe)
@@ -79,6 +93,24 @@ io.on('connection', (socket) => {
       
     } catch (error) {
       console.error('Failed to save direct message to Redis:', error);
+    }
+  });
+
+  socket.on('direct-typing', async (data) => {
+    const { targetUserId, isTyping, senderId } = data;
+    try {
+      // Find targetSocketId
+      const onlineUsers = await redisClient.hvals('online:users');
+      for (const rawUser of onlineUsers) {
+        if (!rawUser) continue;
+        const u = typeof rawUser === 'string' ? JSON.parse(rawUser) : rawUser;
+        if (u.userId === targetUserId) {
+          io.to(u.socketId).emit('receive-direct-typing', { senderId, isTyping });
+          break;
+        }
+      }
+    } catch (err) {
+      console.error('Failed to forward typing event:', err);
     }
   });
 });

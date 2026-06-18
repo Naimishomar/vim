@@ -17,7 +17,6 @@ export default function GlobalChat() {
   const [showSidebar, setShowSidebar] = useState(true);
   const [unreadCounts, setUnreadCounts] = useState<{ [userId: string]: number }>({});
   const [searchTerm, setSearchTerm] = useState('');
-  const [activeTab, setActiveTab] = useState<'inbox' | 'online' | 'search'>('inbox');
   const [searchResults, setSearchResults] = useState<any[]>([]);
   const [inboxUsers, setInboxUsers] = useState<any[]>([]);
   const [isSearching, setIsSearching] = useState(false);
@@ -84,13 +83,6 @@ export default function GlobalChat() {
     if (isAuthenticated) fetchInboxUsers();
   }, [isAuthenticated]);
 
-  // Refresh inbox when switching to it
-  useEffect(() => {
-    if (activeTab === 'inbox') {
-      fetchInboxUsers();
-    }
-  }, [activeTab]);
-
   // Initialize Lenis for the sidebar
   useEffect(() => {
     if (!scrollRef.current) return;
@@ -115,7 +107,7 @@ export default function GlobalChat() {
 
   // Search API effect
   useEffect(() => {
-    if (activeTab !== 'search' || !searchTerm.trim()) {
+    if (!searchTerm.trim()) {
       setSearchResults([]);
       return;
     }
@@ -149,7 +141,7 @@ export default function GlobalChat() {
     }, 1500);
 
     return () => clearTimeout(timer);
-  }, [searchTerm, activeTab, user]);
+  }, [searchTerm, user]);
 
   // Establish socket connection and register presence
   useEffect(() => {
@@ -229,27 +221,7 @@ export default function GlobalChat() {
     );
   }
 
-  const filteredUsers = onlineUsers
-    .filter(u => {
-      if (!searchTerm) return true;
-      const term = searchTerm.toLowerCase();
-      return (u.name?.toLowerCase() || '').includes(term) || 
-             (u.username?.toLowerCase() || '').includes(term);
-    })
-    .sort((a, b) => {
-      const aUnread = unreadCounts[a.userId] || 0;
-      const bUnread = unreadCounts[b.userId] || 0;
-      if (aUnread !== bUnread) return bUnread - aUnread; // Sort unread first
-      return (a.name || '').localeCompare(b.name || '');
-    });
 
-  const displayUsers = activeTab === 'inbox' 
-    ? inboxUsers.sort((a, b) => {
-        const aUnread = unreadCounts[a.userId] || 0;
-        const bUnread = unreadCounts[b.userId] || 0;
-        return bUnread - aUnread; // Sort unread first, otherwise keep Redis sorted order
-      })
-    : activeTab === 'online' ? filteredUsers : searchResults;
 
   return (
     <div className="h-screen bg-[#15171B] text-white font-sans flex flex-col overflow-hidden">
@@ -265,11 +237,10 @@ export default function GlobalChat() {
         
         {/* Sidebar */}
         <div className={`w-full md:w-[380px] bg-[#0A0A0A] border-r border-white/5 flex flex-col z-20 shrink-0 ${!showSidebar ? 'hidden md:flex' : ''}`}>
-          <div className="p-8 pb-6 border-b border-white/5">
+          <div className="p-8 pb-6 border-b border-white/5 bg-[#0A0A0A]">
             <div className="flex items-center justify-between mb-6">
               <h2 className="text-2xl font-normal flex items-center gap-2" style={{ fontFamily: '"Playfair Display", Georgia, serif' }}>
-                <Users size={24} className="text-zinc-500" />
-                <span className="text-white">Contacts</span>
+                <span className="text-white">Messages</span>
               </h2>
               <div className="flex items-center gap-2 px-3 py-1.5 bg-[#131313] border border-white/10 rounded-full">
                 <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse"></div>
@@ -277,114 +248,156 @@ export default function GlobalChat() {
               </div>
             </div>
 
-            <div className="flex items-center gap-6 mb-4 border-b border-white/5 pb-4 px-2 overflow-x-auto custom-scrollbar whitespace-nowrap">
-              <button 
-                onClick={() => setActiveTab('inbox')}
-                className={`text-sm font-medium transition-colors relative ${activeTab === 'inbox' ? 'text-white' : 'text-zinc-500 hover:text-zinc-300'}`}
-              >
-                Recent Chats
-                {activeTab === 'inbox' && <div className="absolute -bottom-4 left-0 right-0 h-0.5 bg-white rounded-t-full" />}
-              </button>
-              <button 
-                onClick={() => setActiveTab('online')}
-                className={`text-sm font-medium transition-colors relative flex items-center gap-1.5 ${activeTab === 'online' ? 'text-white' : 'text-zinc-500 hover:text-zinc-300'}`}
-              >
-                Online
-                <div className="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse mb-0.5"></div>
-                {activeTab === 'online' && <div className="absolute -bottom-4 left-0 right-0 h-0.5 bg-white rounded-t-full" />}
-              </button>
-              <button 
-                onClick={() => setActiveTab('search')}
-                className={`text-sm font-medium transition-colors relative ${activeTab === 'search' ? 'text-white' : 'text-zinc-500 hover:text-zinc-300'}`}
-              >
-                Find Users
-                {activeTab === 'search' && <div className="absolute -bottom-4 left-0 right-0 h-0.5 bg-white rounded-t-full" />}
-              </button>
+            <div className="relative group">
+              <Search size={16} className="absolute left-4 top-1/2 -translate-y-1/2 text-zinc-500 group-focus-within:text-white transition-colors" />
+              <input 
+                type="text" 
+                placeholder="Search users..." 
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="w-full bg-[#131313] border border-white/10 rounded-xl py-3.5 pl-11 pr-4 text-sm text-white placeholder-zinc-500 focus:outline-none focus:border-white/20 transition-all duration-300 shadow-[inset_0_2px_4px_rgba(0,0,0,0.2)]"
+              />
             </div>
-
-            {activeTab === 'search' && (
-              <div className="relative group">
-                <Search size={16} className="absolute left-4 top-1/2 -translate-y-1/2 text-zinc-500 group-focus-within:text-white transition-colors" />
-                <input 
-                  type="text" 
-                  placeholder="Search database..." 
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                  className="w-full bg-[#131313] border border-white/10 rounded-xl py-3 pl-11 pr-4 text-sm text-white placeholder-zinc-500 focus:outline-none focus:border-white/20 transition-all duration-300"
-                />
-              </div>
-            )}
           </div>
 
-          <div className="flex-1 overflow-y-auto relative z-10 custom-scrollbar" ref={scrollRef}>
-            <div className="p-4 space-y-1">
-              {activeTab === 'search' && isSearching ? (
-                <div className="flex flex-col items-center justify-center text-center mt-10 p-6 bg-[#131313] rounded-2xl border border-white/5">
-                  <div className="w-6 h-6 border-2 border-white/20 border-t-white rounded-full animate-spin mb-3"></div>
-                  <p className="text-zinc-400 text-sm">Searching users...</p>
+          <div className="flex-1 overflow-y-auto relative z-10 custom-scrollbar pb-20 md:pb-0" ref={scrollRef}>
+            
+            {!searchTerm.trim() ? (
+              <>
+                {/* Horizontal Online Users */}
+                {onlineUsers.length > 0 && (
+                  <div className="py-6 border-b border-white/5">
+                    <h3 className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest mb-4 px-6">Online Now</h3>
+                    <div className="flex gap-5 px-6 overflow-x-auto custom-scrollbar pb-4 -mb-4">
+                      {onlineUsers.map(u => (
+                        <button 
+                          key={u.userId} 
+                          onClick={() => {
+                            setSelectedUser(u);
+                            setUnreadCounts(prev => ({ ...prev, [u.userId]: 0 }));
+                            setShowSidebar(false);
+                          }} 
+                          className="flex flex-col items-center gap-2.5 shrink-0 group focus:outline-none"
+                        >
+                          <div className={`relative w-[68px] h-[68px] rounded-full p-[3px] transition-all duration-300 group-hover:scale-105 ${u.premiumStatus ? 'bg-gradient-to-tr from-amber-200 to-amber-500' : 'bg-gradient-to-tr from-green-400 to-emerald-600'}`}>
+                            <div className="w-full h-full rounded-full bg-[#0A0A0A] border-2 border-[#0A0A0A] overflow-hidden flex items-center justify-center relative z-10">
+                              {u.profileImage ? (
+                                <img src={u.profileImage} alt={u.name} className="w-full h-full object-cover" />
+                              ) : (
+                                <span className="text-white font-bold text-xl">{u.name?.charAt(0).toUpperCase()}</span>
+                              )}
+                            </div>
+                            <div className="absolute bottom-0 right-0 w-4 h-4 bg-green-500 border-2 border-[#0A0A0A] rounded-full z-20"></div>
+                          </div>
+                          <span className="text-xs font-medium text-zinc-400 group-hover:text-white transition-colors truncate w-16 text-center">
+                            {u.name?.split(' ')[0]}
+                          </span>
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* Vertical Recent Chats */}
+                <div className="p-4 space-y-1">
+                  <h3 className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest mb-3 px-2 pt-2">Recent Chats</h3>
+                  {inboxUsers.length === 0 ? (
+                    <div className="flex flex-col items-center justify-center text-center mt-6 p-6 bg-[#131313] rounded-2xl border border-white/5">
+                      <p className="text-zinc-500 text-sm">No recent chats.</p>
+                    </div>
+                  ) : (
+                    inboxUsers.sort((a, b) => (unreadCounts[b.userId] || 0) - (unreadCounts[a.userId] || 0)).map(u => (
+                      <button
+                        key={u.userId}
+                        onClick={() => {
+                          setSelectedUser(u);
+                          setUnreadCounts(prev => ({ ...prev, [u.userId]: 0 }));
+                          setShowSidebar(false);
+                        }}
+                        className={`w-full flex items-center gap-4 p-3 rounded-2xl transition-all duration-300 border group ${
+                          selectedUser?.userId === u.userId 
+                            ? 'bg-white/5 border-white/10' 
+                            : 'border-transparent hover:bg-white/5'
+                        }`}
+                      >
+                        <div className="relative shrink-0">
+                          <div className={`w-[52px] h-[52px] rounded-full bg-[#1A1A1A] p-0.5 overflow-hidden flex items-center justify-center ${u.premiumStatus ? 'border border-amber-400/50' : 'border border-white/10'}`}>
+                            {u.profileImage ? (
+                              <img src={u.profileImage} alt={u.name} className="w-full h-full object-cover rounded-full" />
+                            ) : (
+                              <span className="text-white font-bold text-lg">{u.name?.charAt(0).toUpperCase() || '?'}</span>
+                            )}
+                          </div>
+                        </div>
+                        <div className="text-left flex-1 min-w-0 flex justify-between items-center">
+                          <div>
+                            <p className={`font-medium text-[15px] truncate ${unreadCounts[u.userId] ? 'text-white' : 'text-zinc-200'}`}>{u.name || 'Anonymous'}</p>
+                            <p className="text-[13px] text-zinc-500 truncate mt-0.5">@{u.username}</p>
+                          </div>
+                          {!!unreadCounts[u.userId] && (
+                            <div className="bg-red-500 text-white text-[10px] font-bold w-5 h-5 flex items-center justify-center rounded-full shrink-0 shadow-[0_0_10px_rgba(239,68,68,0.4)]">
+                              {unreadCounts[u.userId]}
+                            </div>
+                          )}
+                          <button 
+                            onClick={(e) => handleClearChat(e, u.userId)}
+                            className="p-2 text-zinc-500 hover:text-red-400 hover:bg-white/10 rounded-full transition-colors opacity-0 group-hover:opacity-100 shrink-0 ml-1"
+                            title="Hide chat"
+                          >
+                            <Trash2 size={16} />
+                          </button>
+                        </div>
+                      </button>
+                    ))
+                  )}
                 </div>
-              ) : displayUsers.length === 0 ? (
-                <div className="flex flex-col items-center justify-center text-center mt-10 p-6 bg-[#131313] rounded-2xl border border-white/5">
-                  <Search size={24} className="text-zinc-600 mb-3" />
-                  <p className="text-zinc-400 text-sm">
-                    {activeTab === 'search' 
-                      ? (searchTerm ? 'No users found in database.' : 'Type a username or name to search.') 
-                      : activeTab === 'inbox' 
-                        ? 'No recent chats. Start a conversation!'
-                        : 'No users online.'}
-                  </p>
-                </div>
-              ) : (
-                displayUsers.map((u) => (
-                  <button
-                    key={u.userId}
-                    onClick={() => {
-                      setSelectedUser(u);
-                      setUnreadCounts(prev => ({ ...prev, [u.userId]: 0 }));
-                      setShowSidebar(false);
-                    }}
-                    className={`w-full flex items-center gap-4 p-3 rounded-xl transition-all duration-300 border group ${
-                      selectedUser?.userId === u.userId 
-                        ? 'bg-white/5 border-white/10' 
-                        : 'border-transparent hover:bg-[#131313]'
-                    }`}
-                  >
-                    <div className="relative shrink-0">
-                      <div className={`w-12 h-12 rounded-full border bg-[#1A1A1A] p-0.5 ${u.premiumStatus ? 'border-white shadow-[0_0_10px_rgba(255,255,255,0.3)]' : 'border-white/10'}`}>
-                        <div className="w-full h-full rounded-full bg-[#111] flex items-center justify-center overflow-hidden">
+              </>
+            ) : (
+              <div className="p-4 space-y-1">
+                <h3 className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest mb-3 px-2 pt-2">Search Results</h3>
+                {isSearching ? (
+                  <div className="flex flex-col items-center justify-center text-center mt-6 p-6 bg-[#131313] rounded-2xl border border-white/5">
+                    <div className="w-6 h-6 border-2 border-white/20 border-t-white rounded-full animate-spin mb-3"></div>
+                    <p className="text-zinc-400 text-sm">Searching users...</p>
+                  </div>
+                ) : searchResults.length === 0 ? (
+                  <div className="flex flex-col items-center justify-center text-center mt-6 p-6 bg-[#131313] rounded-2xl border border-white/5">
+                    <Search size={24} className="text-zinc-600 mb-3" />
+                    <p className="text-zinc-400 text-sm">No users found.</p>
+                  </div>
+                ) : (
+                  searchResults.map(u => (
+                    <button
+                      key={u.userId}
+                      onClick={() => {
+                        setSelectedUser(u);
+                        setUnreadCounts(prev => ({ ...prev, [u.userId]: 0 }));
+                        setShowSidebar(false);
+                      }}
+                      className={`w-full flex items-center gap-4 p-3 rounded-2xl transition-all duration-300 border group ${
+                        selectedUser?.userId === u.userId 
+                          ? 'bg-white/5 border-white/10' 
+                          : 'border-transparent hover:bg-white/5'
+                      }`}
+                    >
+                      <div className="relative shrink-0">
+                        <div className={`w-[52px] h-[52px] rounded-full bg-[#1A1A1A] p-0.5 overflow-hidden flex items-center justify-center ${u.premiumStatus ? 'border border-amber-400/50' : 'border border-white/10'}`}>
                           {u.profileImage ? (
-                            <img src={u.profileImage} alt={u.name} className="w-full h-full object-cover" />
+                            <img src={u.profileImage} alt={u.name} className="w-full h-full object-cover rounded-full" />
                           ) : (
                             <span className="text-white font-bold text-lg">{u.name?.charAt(0).toUpperCase() || '?'}</span>
                           )}
                         </div>
                       </div>
-                      <div className="absolute bottom-0.5 right-0.5 w-3.5 h-3.5 bg-green-500 border-2 border-[#0A0A0A] rounded-full" />
-                    </div>
-                    <div className="text-left flex-1 min-w-0 flex justify-between items-center">
-                      <div>
-                        <p className={`font-medium text-sm truncate ${unreadCounts[u.userId] ? 'text-white' : 'text-zinc-300'}`}>{u.name || 'Anonymous'}</p>
-                        <p className="text-xs text-zinc-500 truncate mt-0.5">@{u.username}</p>
+                      <div className="text-left flex-1 min-w-0">
+                        <p className={`font-medium text-[15px] truncate text-zinc-200`}>{u.name || 'Anonymous'}</p>
+                        <p className="text-[13px] text-zinc-500 truncate mt-0.5">@{u.username}</p>
                       </div>
-                      {!!unreadCounts[u.userId] && (
-                        <div className="bg-red-500 text-white text-[10px] font-bold px-2 py-0.5 rounded-full shrink-0">
-                          {unreadCounts[u.userId]}
-                        </div>
-                      )}
-                      <button 
-                        onClick={(e) => handleClearChat(e, u.userId)}
-                        className="p-1.5 text-zinc-500 hover:text-red-400 hover:bg-white/5 rounded-full transition-colors opacity-0 group-hover:opacity-100 shrink-0"
-                        title="Hide chat"
-                      >
-                        <Trash2 size={14} />
-                      </button>
-                    </div>
-                  </button>
-                ))
-              )}
-            </div>
-            {/* Padding for BottomNav on mobile */}
-            <div className="h-16 md:hidden"></div>
+                    </button>
+                  ))
+                )}
+              </div>
+            )}
           </div>
         </div>
 

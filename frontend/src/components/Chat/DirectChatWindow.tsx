@@ -22,7 +22,9 @@ export default function DirectChatWindow({ socket, currentUser, selectedUser, on
   const [messages, setMessages] = useState<Message[]>([]);
   const [inputText, setInputText] = useState('');
   const [isUploading, setIsUploading] = useState(false);
+  const [isTyping, setIsTyping] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const typingTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const authState = useAuthStore.getState();
 
@@ -70,12 +72,20 @@ export default function DirectChatWindow({ socket, currentUser, selectedUser, on
       setMessages(prev => prev.filter(m => m.id !== 'optimistic'));
     };
 
+    const handleReceiveTyping = (data: { senderId: string, isTyping: boolean }) => {
+      if (data.senderId === selectedUser.userId) {
+        setIsTyping(data.isTyping);
+      }
+    };
+
     socket.on('receive-direct-message', handleReceiveMessage);
     socket.on('chat-error', handleChatError);
+    socket.on('receive-direct-typing', handleReceiveTyping);
 
     return () => {
       socket.off('receive-direct-message', handleReceiveMessage);
       socket.off('chat-error', handleChatError);
+      socket.off('receive-direct-typing', handleReceiveTyping);
     };
   }, [socket, selectedUser, currentUser]);
 
@@ -116,6 +126,34 @@ export default function DirectChatWindow({ socket, currentUser, selectedUser, on
     });
     
     setInputText('');
+    
+    if (typingTimeoutRef.current) clearTimeout(typingTimeoutRef.current);
+    socket.emit('direct-typing', {
+      senderId,
+      targetUserId: selectedUser.userId,
+      isTyping: false
+    });
+  };
+
+  const handleInputChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
+    setInputText(e.target.value);
+    
+    if (socket && selectedUser && currentUser) {
+      socket.emit('direct-typing', {
+        senderId: currentUser._id || currentUser.username,
+        targetUserId: selectedUser.userId,
+        isTyping: true
+      });
+
+      if (typingTimeoutRef.current) clearTimeout(typingTimeoutRef.current);
+      typingTimeoutRef.current = setTimeout(() => {
+        socket.emit('direct-typing', {
+          senderId: currentUser._id || currentUser.username,
+          targetUserId: selectedUser.userId,
+          isTyping: false
+        });
+      }, 2000);
+    }
   };
 
   const handleReport = async () => {
@@ -319,6 +357,24 @@ export default function DirectChatWindow({ socket, currentUser, selectedUser, on
             );
           })
         )}
+        
+        {isTyping && (
+          <div className="flex items-end gap-3 justify-start mt-4">
+            <div className={`w-8 h-8 rounded-full overflow-hidden shrink-0 bg-[#1A1A1A] border border-white/10 flex items-center justify-center`}>
+              {selectedUser?.profileImage ? (
+                <img src={selectedUser.profileImage} alt="User" className="w-full h-full object-cover" />
+              ) : (
+                <span className="text-xs font-bold text-white">{selectedUser.name?.charAt(0)}</span>
+              )}
+            </div>
+            <div className="bg-[#1A1A1A] px-4 py-3.5 rounded-2xl rounded-bl-sm border border-white/10 flex items-center gap-1.5">
+              <div className="w-1.5 h-1.5 bg-zinc-500 rounded-full animate-bounce" style={{ animationDelay: '0ms' }}></div>
+              <div className="w-1.5 h-1.5 bg-zinc-500 rounded-full animate-bounce" style={{ animationDelay: '150ms' }}></div>
+              <div className="w-1.5 h-1.5 bg-zinc-500 rounded-full animate-bounce" style={{ animationDelay: '300ms' }}></div>
+            </div>
+          </div>
+        )}
+        
         <div ref={messagesEndRef} className="h-4" />
       </div>
 
@@ -345,7 +401,7 @@ export default function DirectChatWindow({ socket, currentUser, selectedUser, on
           <div className="flex-1 relative">
             <textarea
               value={inputText}
-              onChange={(e) => setInputText(e.target.value)}
+              onChange={handleInputChange}
               onKeyDown={(e) => {
                 if (e.key === 'Enter' && !e.shiftKey) {
                   e.preventDefault();
