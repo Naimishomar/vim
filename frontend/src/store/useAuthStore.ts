@@ -7,6 +7,7 @@ export interface User {
   username: string;
   email?: string;
   profileImage?: string;
+  role: string;
   premiumStatus: boolean;
   premiumExpiryDate?: string;
   gender?: string;

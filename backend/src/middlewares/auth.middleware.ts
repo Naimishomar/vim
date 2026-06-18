@@ -36,3 +36,20 @@ export const requireAuth = async (req: Request, res: Response, next: NextFunctio
     res.status(401).json({ error: 'Unauthorized: Invalid or expired token' });
   }
 };
+
+export const requireAdmin = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+  try {
+    const user: any = req.user;
+    if (!user) {
+      res.status(401).json({ error: 'Unauthorized: User not authenticated' });
+      return;
+    }
+    if (user.role !== 'admin') {
+      res.status(403).json({ error: 'Forbidden: Admin access required' });
+      return;
+    }
+    next();
+  } catch (error) {
+    res.status(500).json({ error: 'Internal server error checking admin status' });
+  }
+};

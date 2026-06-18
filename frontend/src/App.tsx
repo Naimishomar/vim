@@ -1,4 +1,4 @@
-import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route, useLocation } from 'react-router-dom';
 import Home from './pages/Home';
 import Pricing from './pages/Pricing';
 import Registry from './pages/Registry';
@@ -8,12 +8,23 @@ import OAuthCallback from './pages/OAuthCallback';
 import Lobby from './pages/Lobby';
 import Terms from './pages/Terms';
 import Contact from './pages/Contact';
+import AdminDashboard from './pages/AdminDashboard';
 
 import OnboardingModal from './components/OnboardingModal';
 import { ReactLenis } from 'lenis/react';
 import { useEffect } from 'react';
 import { HelmetProvider } from 'react-helmet-async';
 import { useAuthStore } from './store/useAuthStore';
+
+function ScrollToTop() {
+  const { pathname } = useLocation();
+
+  useEffect(() => {
+    window.scrollTo(0, 0);
+  }, [pathname]);
+
+  return null;
+}
 
 function App() {
   const checkAuth = useAuthStore(state => state.checkAuth);
@@ -26,6 +37,7 @@ function App() {
     <HelmetProvider>
       <ReactLenis root>
       <Router>
+        <ScrollToTop />
         <OnboardingModal />
         <Routes>
           <Route path="/" element={<Home />} />
@@ -33,6 +45,7 @@ function App() {
           <Route path="/chat" element={<GlobalChat />} />
           <Route path="/mcp" element={<Registry />} />
           <Route path="/setup/:type" element={<Lobby />} />
+          <Route path="/admin" element={<AdminDashboard />} />
           <Route path="/call" element={<VideoCall />} />
           <Route path="/call/video" element={<VideoCall />} />
           <Route path="/call/audio" element={<VideoCall />} />

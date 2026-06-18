@@ -1,5 +1,5 @@
 import { Link } from 'react-router-dom';
-import { LogOut, User, Settings } from 'lucide-react';
+import { LogOut, User, Settings, Shield } from 'lucide-react';
 import { useState, useRef, useEffect } from 'react';
 import { useAuthStore } from '../store/useAuthStore';
 import LoginModal from './LoginModal';
@@ -112,6 +112,17 @@ export default function Navbar() {
                         <Settings size={16} />
                         Settings
                       </button>
+
+                      {user?.role === 'admin' && (
+                        <Link 
+                          to="/admin"
+                          onClick={() => setDropdownOpen(false)}
+                          className="flex items-center gap-3 px-4 py-2 text-sm text-zinc-300 hover:bg-white/5 hover:text-white transition-colors w-full text-left cursor-pointer"
+                        >
+                          <Shield size={16} />
+                          Admin Panel
+                        </Link>
+                      )}
                       
                       <button 
                         onClick={handleLogout}

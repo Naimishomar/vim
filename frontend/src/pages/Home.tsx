@@ -3,7 +3,7 @@ import { motion } from 'framer-motion';
 import { useState } from 'react';
 import {
   Video, Headphones, ArrowRight, Shield,
-  Zap, MessageSquare, SkipForward, Globe, Check, ChevronDown
+  Zap, MessageSquare, SkipForward, Globe, Check, ChevronDown, Crown, User
 } from 'lucide-react';
 import Navbar from '../components/Navbar';
 import SEO from '../components/SEO';
@@ -466,6 +466,64 @@ export default function Home() {
               That's not a bug. <strong className="text-black">That's the feature.</strong>
             </p>
           </motion.div>
+        </section>
+
+        {/* ══════════════════════════════════════════
+            SECTION 5.25 — PREMIUM PRICING DISCOVERY
+        ══════════════════════════════════════════ */}
+        <section className="px-6 pb-28 max-w-5xl mx-auto w-full relative">
+          <div className="absolute inset-0 bg-gradient-to-b from-transparent via-white/[0.02] to-transparent pointer-events-none rounded-3xl" />
+          
+          <div className="flex flex-col md:flex-row items-center gap-12 bg-[#15171B] border border-white/10 rounded-3xl p-8 md:p-12 relative overflow-hidden">
+            {/* Background Glow */}
+            <div className="absolute -top-40 -right-40 w-80 h-80 bg-white/10 blur-[100px] rounded-full pointer-events-none" />
+
+            <div className="flex-1">
+              <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/10 border border-white/20 text-white text-xs font-medium tracking-wide uppercase mb-6">
+                <Crown size={14} className="text-yellow-400" />
+                Vibelly Premium
+              </div>
+              
+              <h2 
+                className="text-3xl md:text-5xl font-normal text-white mb-6 leading-tight"
+                style={{ fontFamily: '"Playfair Display", "Merriweather", "Lora", ui-serif, Georgia, Cambria, "Times New Roman", Times, serif' }}
+              >
+                Control who you meet. <br className="hidden md:block" />
+                <span className="text-zinc-400 italic">Upgrade your experience.</span>
+              </h2>
+              
+              <p className="text-zinc-400 text-base leading-relaxed mb-8 max-w-lg">
+                While random chat is free forever, Premium unlocks the power to filter your matches. 
+                Meet exactly who you want, where you want, in crystal clear high-definition.
+              </p>
+
+              <button 
+                onClick={() => navigate('/pricing')}
+                className="bg-white text-black px-8 py-3.5 rounded-xl font-medium hover:bg-zinc-200 transition-colors shadow-[0_0_20px_rgba(255,255,255,0.2)]"
+              >
+                View Premium Plans
+              </button>
+            </div>
+
+            <div className="w-full md:w-[400px] flex flex-col gap-4">
+              {[
+                { icon: Globe, title: 'Country Filtering', desc: 'Match only with users from specific countries.' },
+                { icon: User, title: 'Gender Preference', desc: 'Choose to meet the opposite or same gender.' },
+                { icon: Video, title: '720p HD Video', desc: 'Upgraded video resolution for clearer calls.' },
+                { icon: Shield, title: 'Premium Profile Border', desc: 'Stand out in global chat with a glowing badge.' }
+              ].map((feature, i) => (
+                <div key={i} className="group flex items-start gap-4 p-4 rounded-xl bg-white/5 border border-white/5 hover:bg-white transition-all cursor-pointer">
+                  <div className="w-10 h-10 rounded-full bg-white/10 group-hover:bg-black/10 flex items-center justify-center shrink-0 transition-colors">
+                    <feature.icon size={18} className="text-white group-hover:text-black transition-colors" />
+                  </div>
+                  <div>
+                    <h4 className="text-sm font-semibold text-white group-hover:text-black transition-colors mb-1">{feature.title}</h4>
+                    <p className="text-xs text-zinc-400 group-hover:text-zinc-600 transition-colors">{feature.desc}</p>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
         </section>
 
         {/* ══════════════════════════════════════════

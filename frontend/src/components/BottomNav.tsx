@@ -1,5 +1,5 @@
 import { Link, useNavigate } from 'react-router-dom';
-import { Home as HomeIcon, MessageSquare, Video, Headphones as HeadphonesIcon } from 'lucide-react';
+import { Home as HomeIcon, MessageSquare, Video, Headphones as HeadphonesIcon, Crown } from 'lucide-react';
 import { useAuthStore } from '../store/useAuthStore';
 
 interface BottomNavProps {
@@ -36,6 +36,10 @@ export default function BottomNav({ onRequiresAuth }: BottomNavProps) {
         <HeadphonesIcon size={20} />
         <span className="text-[10px] font-medium">Audio</span>
       </button>
+      <Link to="/pricing" className="flex flex-col items-center gap-1 text-zinc-400 hover:text-yellow-400 transition-colors cursor-pointer relative group">
+        <Crown size={20} className={isAuthenticated && useAuthStore.getState().user?.premiumStatus ? 'text-yellow-400' : ''} />
+        <span className="text-[10px] font-medium">Premium</span>
+      </Link>
     </div>
   );
 }

@@ -12,6 +12,7 @@ export interface IUser extends Document {
   gender?: string;
   country?: string;
   profileImage?: string;
+  role: string;
   interests: string[];
   premiumStatus: boolean;
   premiumExpiryDate?: Date;
@@ -34,6 +35,7 @@ const UserSchema: Schema = new Schema({
   gender: { type: String, enum: ['male', 'female', 'other'] },
   country: { type: String },
   profileImage: { type: String },
+  role: { type: String, enum: ['user', 'admin'], default: 'user' },
   interests: [{ type: String }],
   premiumStatus: { type: Boolean, default: false },
   premiumExpiryDate: { type: Date },
