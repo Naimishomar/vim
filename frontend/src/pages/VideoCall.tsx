@@ -555,9 +555,16 @@ export default function VideoCall() {
       )}
 
       {!isAudioOnly && isMatched && (
-        <div className="absolute top-6 left-6 z-10 text-xs text-zinc-300 bg-black/60 backdrop-blur px-3 py-1.5 rounded-full flex items-center gap-2 shadow-lg">
-          {peerFlag && <img src={peerFlag} alt="flag" className="w-4 h-3 rounded-sm object-cover" />}
-          <span className="font-medium text-white">{peerData?.name || 'Stranger'}</span>
+        <div className="absolute top-6 left-6 z-10 text-xs text-zinc-300 bg-black/60 backdrop-blur px-3 py-1.5 rounded-2xl flex flex-col gap-0.5 shadow-lg">
+          <div className="flex items-center gap-2">
+            {peerFlag && <img src={peerFlag} alt="flag" className="w-4 h-3 rounded-sm object-cover" />}
+            <span className="font-medium text-white">{peerData?.name || 'Stranger'}</span>
+          </div>
+          {peerData?.username && !peerData.username.startsWith('guest-') && (
+            <span className="text-[10px] text-violet-400 select-all cursor-text font-mono" title="Copy Username">
+              @{peerData.username}
+            </span>
+          )}
         </div>
       )}
 

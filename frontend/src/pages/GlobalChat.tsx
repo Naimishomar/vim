@@ -17,6 +17,9 @@ export default function GlobalChat() {
   const [showSidebar, setShowSidebar] = useState(true);
   const [unreadCounts, setUnreadCounts] = useState<{ [userId: string]: number }>({});
   const [searchTerm, setSearchTerm] = useState('');
+  const [activeTab, setActiveTab] = useState<'online' | 'search'>('online');
+  const [searchResults, setSearchResults] = useState<any[]>([]);
+  const [isSearching, setIsSearching] = useState(false);
   const navigate = useNavigate();
   const handleClearChat = async (e: React.MouseEvent, targetUserId: string) => {
     e.stopPropagation();
@@ -73,6 +76,44 @@ export default function GlobalChat() {
       lenis.destroy();
     };
   }, []);
+
+  // Search API effect
+  useEffect(() => {
+    if (activeTab !== 'search' || !searchTerm.trim()) {
+      setSearchResults([]);
+      return;
+    }
+
+    const timer = setTimeout(async () => {
+      setIsSearching(true);
+      try {
+        const backendUrl = import.meta.env.VITE_BACKEND_URL || 'http://localhost:5000';
+        const token = useAuthStore.getState().accessToken || localStorage.getItem('vibe_token');
+        const res = await fetch(`${backendUrl}/api/users/search?q=${encodeURIComponent(searchTerm)}`, {
+          headers: { Authorization: `Bearer ${token}` }
+        });
+        const data = await res.json();
+        if (data.users) {
+           const mappedUsers = data.users.map((u: any) => ({
+             userId: u._id,
+             name: u.name,
+             username: u.username,
+             profileImage: u.profileImage,
+             premiumStatus: u.premiumStatus
+           }));
+           // Filter out self
+           const myId = user?._id || user?.username;
+           setSearchResults(mappedUsers.filter((u: any) => u.userId !== myId));
+        }
+      } catch (e) {
+        console.error('Search failed', e);
+      } finally {
+        setIsSearching(false);
+      }
+    }, 500);
+
+    return () => clearTimeout(timer);
+  }, [searchTerm, activeTab, user]);
 
   // Establish socket connection and register presence
   useEffect(() => {
@@ -163,6 +204,8 @@ export default function GlobalChat() {
       return (a.name || '').localeCompare(b.name || '');
     });
 
+  const displayUsers = activeTab === 'online' ? filteredUsers : searchResults;
+
   return (
     <div className="h-screen bg-[#15171B] text-white font-sans flex flex-col overflow-hidden">
       <SEO 
@@ -188,6 +231,24 @@ export default function GlobalChat() {
                 <span className="text-xs font-medium text-zinc-400">{onlineUsers.length + 1} Online</span>
               </div>
             </div>
+
+            <div className="flex items-center gap-6 mb-4 border-b border-white/5 pb-4">
+              <button 
+                onClick={() => setActiveTab('online')}
+                className={`text-sm font-medium transition-colors relative ${activeTab === 'online' ? 'text-white' : 'text-zinc-500 hover:text-zinc-300'}`}
+              >
+                Online Users
+                {activeTab === 'online' && <div className="absolute -bottom-4 left-0 right-0 h-0.5 bg-white rounded-t-full" />}
+              </button>
+              <button 
+                onClick={() => setActiveTab('search')}
+                className={`text-sm font-medium transition-colors relative ${activeTab === 'search' ? 'text-white' : 'text-zinc-500 hover:text-zinc-300'}`}
+              >
+                Search Database
+                {activeTab === 'search' && <div className="absolute -bottom-4 left-0 right-0 h-0.5 bg-white rounded-t-full" />}
+              </button>
+            </div>
+
             <div className="relative group">
               <Search size={16} className="absolute left-4 top-1/2 -translate-y-1/2 text-zinc-500 group-focus-within:text-white transition-colors" />
               <input 
@@ -202,13 +263,20 @@ export default function GlobalChat() {
 
           <div className="flex-1 overflow-y-auto relative z-10 custom-scrollbar" ref={scrollRef}>
             <div className="p-4 space-y-1">
-              {filteredUsers.length === 0 ? (
+              {activeTab === 'search' && isSearching ? (
+                <div className="flex flex-col items-center justify-center text-center mt-10 p-6 bg-[#131313] rounded-2xl border border-white/5">
+                  <div className="w-6 h-6 border-2 border-white/20 border-t-white rounded-full animate-spin mb-3"></div>
+                  <p className="text-zinc-400 text-sm">Searching users...</p>
+                </div>
+              ) : displayUsers.length === 0 ? (
                 <div className="flex flex-col items-center justify-center text-center mt-10 p-6 bg-[#131313] rounded-2xl border border-white/5">
                   <Search size={24} className="text-zinc-600 mb-3" />
-                  <p className="text-zinc-400 text-sm">No users found.</p>
+                  <p className="text-zinc-400 text-sm">
+                    {activeTab === 'search' ? (searchTerm ? 'No users found in database.' : 'Type a username or name to search.') : 'No users online.'}
+                  </p>
                 </div>
               ) : (
-                filteredUsers.map((u) => (
+                displayUsers.map((u) => (
                   <button
                     key={u.userId}
                     onClick={() => {

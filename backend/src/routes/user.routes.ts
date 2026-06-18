@@ -64,4 +64,31 @@ router.post('/report', requireAuth, async (req, res) => {
   }
 });
 
+// Endpoint to search users by username or name
+router.get('/search', requireAuth, async (req, res) => {
+  try {
+    const { q } = req.query;
+    if (!q || typeof q !== 'string') {
+      return res.json({ users: [] });
+    }
+    
+    // Perform case-insensitive regex search
+    const users = await User.find({
+      $or: [
+        { username: { $regex: q, $options: 'i' } },
+        { name: { $regex: q, $options: 'i' } }
+      ],
+      isBanned: false
+    })
+    .select('_id name username profileImage premiumStatus')
+    .limit(20)
+    .lean();
+
+    res.json({ users });
+  } catch (error) {
+    console.error('Error searching users:', error);
+    res.status(500).json({ error: 'Failed to search users' });
+  }
+});
+
 export default router;
