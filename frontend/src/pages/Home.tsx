@@ -11,6 +11,8 @@ import Footer from '../components/Footer';
 import BlinkingDotsGrid from '../components/BlinkingDotsGrid';
 import InteractiveHeroCards from '../components/InteractiveHeroCards';
 import CurvedCarousel from '../components/CurvedCarousel';
+import { useAuthStore } from '../store/useAuthStore';
+import LoginModal from '../components/LoginModal';
 
 /* ─── Data ─── */
 const features = [
@@ -163,6 +165,16 @@ function FAQItem({ question, answer, isLast }: { question: string, answer: strin
 export default function Home() {
   const navigate = useNavigate();
   const [activeStep, setActiveStep] = useState('find');
+  const [isLoginModalOpen, setIsLoginModalOpen] = useState(false);
+  const { isAuthenticated } = useAuthStore();
+
+  const handleProtectedNavigation = (path: string) => {
+    if (!isAuthenticated) {
+      setIsLoginModalOpen(true);
+    } else {
+      navigate(path);
+    }
+  };
 
   return (
     <div className="min-h-screen bg-[#15171B] text-white flex flex-col font-sans">
@@ -211,14 +223,14 @@ export default function Home() {
             className="flex flex-col sm:flex-row items-center gap-4"
           >
             <button
-              onClick={() => navigate('/setup/video')}
+              onClick={() => handleProtectedNavigation('/setup/video')}
               className="flex items-center gap-2 bg-white text-black px-6 py-2.5 rounded-md font-medium hover:bg-zinc-100 transition-colors"
             >
               Start Video Call
               <ArrowRight size={16} />
             </button>
             <button
-              onClick={() => navigate('/setup/audio')}
+              onClick={() => handleProtectedNavigation('/setup/audio')}
               className="flex items-center gap-2 bg-zinc-800/60 text-white border border-zinc-700 px-6 py-2.5 rounded-md font-medium hover:bg-zinc-800 transition-colors"
             >
               <Headphones size={16} />
@@ -574,7 +586,7 @@ export default function Home() {
             </p>
             <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
               <button
-                onClick={() => navigate('/setup/video')}
+                onClick={() => handleProtectedNavigation('/setup/video')}
                 className="flex items-center gap-2 bg-white text-black px-8 py-3 rounded-md font-medium hover:bg-zinc-100 transition-colors text-base"
               >
                 <Video size={18} />
@@ -582,7 +594,7 @@ export default function Home() {
                 <ArrowRight size={16} />
               </button>
               <button
-                onClick={() => navigate('/setup/audio')}
+                onClick={() => handleProtectedNavigation('/setup/audio')}
                 className="flex items-center gap-2 text-zinc-400 hover:text-white transition-colors text-sm"
               >
                 <Globe size={14} />
@@ -594,6 +606,7 @@ export default function Home() {
 
         {/* ─── Footer ─── */}
         <Footer />
+        <LoginModal isOpen={isLoginModalOpen} onClose={() => setIsLoginModalOpen(false)} />
       </div>
     </div>
   );

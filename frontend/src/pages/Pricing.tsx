@@ -9,6 +9,7 @@ import { useAuthStore } from '../store/useAuthStore';
 import { useNavigate } from 'react-router-dom';
 import html2canvas from 'html2canvas';
 import jsPDF from 'jspdf';
+import LoginModal from '../components/LoginModal';
 
 const loadScript = (src: string) => {
   return new Promise((resolve) => {
@@ -30,6 +31,7 @@ export default function Pricing() {
     date: string;
     plan: string;
   } | null>(null);
+  const [isLoginModalOpen, setIsLoginModalOpen] = useState(false);
   const receiptRef = useRef<HTMLDivElement>(null);
   const { user, isAuthenticated, checkAuth } = useAuthStore();
   const navigate = useNavigate();
@@ -62,7 +64,7 @@ export default function Pricing() {
 
   const handlePayment = async (planPriceStr: string) => {
     if (!isAuthenticated) {
-      navigate('/?login=true'); // Or somehow open login modal
+      setIsLoginModalOpen(true);
       return;
     }
 
@@ -487,6 +489,8 @@ export default function Pricing() {
           </motion.div>
         </div>
       )}
+      
+      <LoginModal isOpen={isLoginModalOpen} onClose={() => setIsLoginModalOpen(false)} />
       
       <Footer />
     </div>
