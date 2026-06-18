@@ -110,7 +110,7 @@ export default function GlobalChat() {
       } finally {
         setIsSearching(false);
       }
-    }, 500);
+    }, 1500);
 
     return () => clearTimeout(timer);
   }, [searchTerm, activeTab, user]);
