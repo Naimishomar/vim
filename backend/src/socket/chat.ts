@@ -67,6 +67,15 @@ io.on('connection', (socket) => {
       
       // Reset TTL to 24 hours (86400 seconds) on every new message
       await redisClient.expire(conversationKey, 86400);
+
+      // Add to Inbox Sorted Set with timestamp score
+      const nowScore = Date.now();
+      await redisClient.zadd(`inbox:${senderId}`, { score: nowScore, member: targetUserId });
+      await redisClient.zadd(`inbox:${targetUserId}`, { score: nowScore, member: senderId });
+      
+      // Expire inbox keys after 24 hours of inactivity just in case
+      await redisClient.expire(`inbox:${senderId}`, 86400);
+      await redisClient.expire(`inbox:${targetUserId}`, 86400);
       
     } catch (error) {
       console.error('Failed to save direct message to Redis:', error);

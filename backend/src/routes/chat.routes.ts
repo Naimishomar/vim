@@ -1,5 +1,7 @@
 import { Router } from 'express';
 import { redisClient } from '../server';
+import { requireAuth } from '../middlewares/auth.middleware';
+import User from '../models/User';
 
 const router = Router();
 
@@ -20,6 +22,38 @@ router.get('/online', async (req, res) => {
   } catch (error) {
     console.error('Error fetching online users:', error);
     res.status(500).json({ error: 'Failed to fetch online users' });
+  }
+});
+
+// GET /api/chat/inbox - Fetch recent chat partners
+router.get('/inbox', requireAuth, async (req, res) => {
+  try {
+    const userId = (req as any).user.id;
+    
+    // Auto-remove expired chats (older than 24h)
+    const twentyFourHoursAgo = Date.now() - (24 * 60 * 60 * 1000);
+    await redisClient.zremrangebyscore(`inbox:${userId}`, 0, twentyFourHoursAgo);
+
+    // Get remaining recent chats (sorted by most recent first)
+    // ZRANGE with rev: true returns array of member strings
+    const recentUserIds = (await redisClient.zrange(`inbox:${userId}`, 0, -1, { rev: true })) as string[];
+    
+    if (!recentUserIds || recentUserIds.length === 0) {
+      return res.json({ inbox: [] });
+    }
+
+    // Fetch user details from MongoDB
+    const users = await User.find({ _id: { $in: recentUserIds } })
+      .select('_id name username profileImage premiumStatus')
+      .lean();
+
+    // Map the users to match the sorted order from Redis
+    const inbox = recentUserIds.map(id => users.find(u => u._id.toString() === id)).filter(Boolean);
+
+    res.json({ inbox });
+  } catch (error) {
+    console.error('Error fetching inbox:', error);
+    res.status(500).json({ error: 'Failed to fetch inbox' });
   }
 });
 

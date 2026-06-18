@@ -17,8 +17,9 @@ export default function GlobalChat() {
   const [showSidebar, setShowSidebar] = useState(true);
   const [unreadCounts, setUnreadCounts] = useState<{ [userId: string]: number }>({});
   const [searchTerm, setSearchTerm] = useState('');
-  const [activeTab, setActiveTab] = useState<'online' | 'search'>('online');
+  const [activeTab, setActiveTab] = useState<'inbox' | 'online' | 'search'>('inbox');
   const [searchResults, setSearchResults] = useState<any[]>([]);
+  const [inboxUsers, setInboxUsers] = useState<any[]>([]);
   const [isSearching, setIsSearching] = useState(false);
   const navigate = useNavigate();
   const handleClearChat = async (e: React.MouseEvent, targetUserId: string) => {
@@ -54,6 +55,41 @@ export default function GlobalChat() {
     selectedUserRef.current = selectedUser;
   }, [selectedUser]);
   const scrollRef = useRef<HTMLDivElement>(null);
+
+  // Fetch Inbox
+  const fetchInboxUsers = async () => {
+    try {
+      const backendUrl = import.meta.env.VITE_BACKEND_URL || 'http://localhost:5000';
+      const token = useAuthStore.getState().accessToken || localStorage.getItem('vibe_token');
+      const res = await fetch(`${backendUrl}/api/chat/inbox`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      const data = await res.json();
+      if (data.inbox) {
+         const mappedUsers = data.inbox.map((u: any) => ({
+           userId: u._id,
+           name: u.name,
+           username: u.username,
+           profileImage: u.profileImage,
+           premiumStatus: u.premiumStatus
+         }));
+         setInboxUsers(mappedUsers);
+      }
+    } catch (e) {
+      console.error('Failed to fetch inbox users', e);
+    }
+  };
+
+  useEffect(() => {
+    if (isAuthenticated) fetchInboxUsers();
+  }, [isAuthenticated]);
+
+  // Refresh inbox when switching to it
+  useEffect(() => {
+    if (activeTab === 'inbox') {
+      fetchInboxUsers();
+    }
+  }, [activeTab]);
 
   // Initialize Lenis for the sidebar
   useEffect(() => {
@@ -173,6 +209,9 @@ export default function GlobalChat() {
           [msg.senderId]: (prev[msg.senderId] || 0) + 1
         }));
       }
+      
+      // Refresh inbox when a new message is received to update the order/list
+      fetchInboxUsers();
     });
 
     return () => {
@@ -204,7 +243,13 @@ export default function GlobalChat() {
       return (a.name || '').localeCompare(b.name || '');
     });
 
-  const displayUsers = activeTab === 'online' ? filteredUsers : searchResults;
+  const displayUsers = activeTab === 'inbox' 
+    ? inboxUsers.sort((a, b) => {
+        const aUnread = unreadCounts[a.userId] || 0;
+        const bUnread = unreadCounts[b.userId] || 0;
+        return bUnread - aUnread; // Sort unread first, otherwise keep Redis sorted order
+      })
+    : activeTab === 'online' ? filteredUsers : searchResults;
 
   return (
     <div className="h-screen bg-[#15171B] text-white font-sans flex flex-col overflow-hidden">
@@ -232,33 +277,43 @@ export default function GlobalChat() {
               </div>
             </div>
 
-            <div className="flex items-center gap-6 mb-4 border-b border-white/5 pb-4">
+            <div className="flex items-center gap-6 mb-4 border-b border-white/5 pb-4 px-2 overflow-x-auto custom-scrollbar whitespace-nowrap">
+              <button 
+                onClick={() => setActiveTab('inbox')}
+                className={`text-sm font-medium transition-colors relative ${activeTab === 'inbox' ? 'text-white' : 'text-zinc-500 hover:text-zinc-300'}`}
+              >
+                Recent Chats
+                {activeTab === 'inbox' && <div className="absolute -bottom-4 left-0 right-0 h-0.5 bg-white rounded-t-full" />}
+              </button>
               <button 
                 onClick={() => setActiveTab('online')}
-                className={`text-sm font-medium transition-colors relative ${activeTab === 'online' ? 'text-white' : 'text-zinc-500 hover:text-zinc-300'}`}
+                className={`text-sm font-medium transition-colors relative flex items-center gap-1.5 ${activeTab === 'online' ? 'text-white' : 'text-zinc-500 hover:text-zinc-300'}`}
               >
-                Online Users
+                Online
+                <div className="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse mb-0.5"></div>
                 {activeTab === 'online' && <div className="absolute -bottom-4 left-0 right-0 h-0.5 bg-white rounded-t-full" />}
               </button>
               <button 
                 onClick={() => setActiveTab('search')}
                 className={`text-sm font-medium transition-colors relative ${activeTab === 'search' ? 'text-white' : 'text-zinc-500 hover:text-zinc-300'}`}
               >
-                Search Database
+                Find Users
                 {activeTab === 'search' && <div className="absolute -bottom-4 left-0 right-0 h-0.5 bg-white rounded-t-full" />}
               </button>
             </div>
 
-            <div className="relative group">
-              <Search size={16} className="absolute left-4 top-1/2 -translate-y-1/2 text-zinc-500 group-focus-within:text-white transition-colors" />
-              <input 
-                type="text" 
-                placeholder="Search users..." 
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className="w-full bg-[#131313] border border-white/10 rounded-xl py-3 pl-11 pr-4 text-sm text-white placeholder-zinc-500 focus:outline-none focus:border-white/20 transition-all duration-300"
-              />
-            </div>
+            {activeTab === 'search' && (
+              <div className="relative group">
+                <Search size={16} className="absolute left-4 top-1/2 -translate-y-1/2 text-zinc-500 group-focus-within:text-white transition-colors" />
+                <input 
+                  type="text" 
+                  placeholder="Search database..." 
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  className="w-full bg-[#131313] border border-white/10 rounded-xl py-3 pl-11 pr-4 text-sm text-white placeholder-zinc-500 focus:outline-none focus:border-white/20 transition-all duration-300"
+                />
+              </div>
+            )}
           </div>
 
           <div className="flex-1 overflow-y-auto relative z-10 custom-scrollbar" ref={scrollRef}>
@@ -272,7 +327,11 @@ export default function GlobalChat() {
                 <div className="flex flex-col items-center justify-center text-center mt-10 p-6 bg-[#131313] rounded-2xl border border-white/5">
                   <Search size={24} className="text-zinc-600 mb-3" />
                   <p className="text-zinc-400 text-sm">
-                    {activeTab === 'search' ? (searchTerm ? 'No users found in database.' : 'Type a username or name to search.') : 'No users online.'}
+                    {activeTab === 'search' 
+                      ? (searchTerm ? 'No users found in database.' : 'Type a username or name to search.') 
+                      : activeTab === 'inbox' 
+                        ? 'No recent chats. Start a conversation!'
+                        : 'No users online.'}
                   </p>
                 </div>
               ) : (
