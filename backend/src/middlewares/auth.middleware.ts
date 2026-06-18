@@ -23,6 +23,11 @@ export const requireAuth = async (req: Request, res: Response, next: NextFunctio
       return;
     }
 
+    if (user.isBanned) {
+      res.status(403).json({ error: 'Forbidden: Your account has been banned' });
+      return;
+    }
+
     // Lazy check for premium expiry
     if (user.premiumStatus && user.premiumExpiryDate && new Date() > user.premiumExpiryDate) {
       user.premiumStatus = false;

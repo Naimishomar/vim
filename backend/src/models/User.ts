@@ -19,6 +19,7 @@ export interface IUser extends Document {
   blockedUsers: mongoose.Types.ObjectId[];
   chatsThisWeek: number;
   lastChatResetDate: Date;
+  isBanned: boolean;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -42,6 +43,7 @@ const UserSchema: Schema = new Schema({
   blockedUsers: [{ type: Schema.Types.ObjectId, ref: 'User' }],
   chatsThisWeek: { type: Number, default: 0 },
   lastChatResetDate: { type: Date, default: Date.now },
+  isBanned: { type: Boolean, default: false },
 }, {
   timestamps: true,
 });
