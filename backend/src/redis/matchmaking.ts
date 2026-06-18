@@ -23,16 +23,16 @@ export const addToQueue = async (socketId: string, userId: string, baseQueueName
 
   if (isPremium && targetGender) {
     if (targetGender === 'opposite' && userGender !== 'unspecified') {
-      queuesToCheck = [`${baseQueueName}:${oppositeGender}`];
+      queuesToCheck = [`${baseQueueName}:${oppositeGender}`, `${baseQueueName}:unspecified`, `${baseQueueName}:${userGender}`];
     } else if (targetGender === 'same' && userGender !== 'unspecified') {
-      queuesToCheck = [`${baseQueueName}:${userGender}`];
+      queuesToCheck = [`${baseQueueName}:${userGender}`, `${baseQueueName}:unspecified`, `${baseQueueName}:${oppositeGender}`];
     } else {
       // random gender or unspecified user gender
       queuesToCheck = [`${baseQueueName}:male`, `${baseQueueName}:female`, `${baseQueueName}:unspecified`].sort(() => Math.random() - 0.5);
     }
   } else if (isPremium && userGender !== 'unspecified') {
-    // Default Premium users with defined gender to ONLY want opposite gender
-    queuesToCheck = [`${baseQueueName}:${oppositeGender}`];
+    // Default Premium users with defined gender to opposite gender, fallback to others
+    queuesToCheck = [`${baseQueueName}:${oppositeGender}`, `${baseQueueName}:unspecified`, `${baseQueueName}:${userGender}`];
   } else {
     // Free users or unspecified gender
     if (userGender !== 'unspecified') {
