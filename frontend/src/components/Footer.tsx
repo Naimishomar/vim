@@ -1,5 +1,5 @@
 import { Link } from 'react-router-dom';
-import { Mail, MapPin, Phone } from 'lucide-react';
+import { Mail, MapPin, Phone, Instagram } from 'lucide-react';
 
 export default function Footer() {
   return (
@@ -45,6 +45,12 @@ export default function Footer() {
           <div className="flex items-center gap-3 text-zinc-400">
             <Phone className="w-5 h-5 shrink-0 text-white" />
             <p>Will Disclosed Soon</p>
+          </div>
+          <div className="flex items-center gap-3 text-zinc-400">
+            <Instagram className="w-5 h-5 shrink-0 text-white" />
+            <a href="https://instagram.com/vibelly.official" target="_blank" rel="noopener noreferrer" className="hover:text-white transition-colors">
+              @vibelly.official
+            </a>
           </div>
         </div>
 
