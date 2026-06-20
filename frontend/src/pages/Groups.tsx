@@ -20,6 +20,7 @@ export default function Groups() {
   const [groupDescription, setGroupDescription] = useState('');
   const [groupPhoto, setGroupPhoto] = useState<File | null>(null);
   const [groupPhotoPreview, setGroupPhotoPreview] = useState('');
+  const [isGroupPublic, setIsGroupPublic] = useState(true);
   const [isCreating, setIsCreating] = useState(false);
 
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -93,7 +94,8 @@ export default function Groups() {
         body: JSON.stringify({
           name: groupName,
           description: groupDescription,
-          photo: photoUrl
+          photo: photoUrl,
+          isPublic: isGroupPublic
         })
       });
 
@@ -268,6 +270,21 @@ export default function Groups() {
                       placeholder="What is this group about?"
                       className="w-full bg-zinc-900 border border-white/10 rounded-xl px-3 py-2 text-sm text-white outline-none focus:border-white/30 transition-colors placeholder:text-zinc-600 resize-none h-14"
                     />
+                  </div>
+
+                  {/* Visibility Toggle */}
+                  <div className="flex items-center justify-between p-3 bg-white/5 border border-white/10 rounded-xl mt-2">
+                    <div>
+                      <p className="text-sm font-medium text-white">Public Group</p>
+                      <p className="text-xs text-zinc-400">Anyone can see and join this group.</p>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => setIsGroupPublic(!isGroupPublic)}
+                      className={`w-11 h-6 rounded-full transition-colors relative cursor-pointer flex items-center px-1 shrink-0 ${isGroupPublic ? 'bg-white' : 'bg-zinc-700'}`}
+                    >
+                      <div className={`w-4 h-4 rounded-full transition-transform ${isGroupPublic ? 'bg-black translate-x-5' : 'bg-zinc-400 translate-x-0'}`} />
+                    </button>
                   </div>
 
                   <button

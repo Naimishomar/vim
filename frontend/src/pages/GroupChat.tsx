@@ -28,6 +28,7 @@ export default function GroupChat() {
   const [editDesc, setEditDesc] = useState('');
   const [editPhoto, setEditPhoto] = useState<File | null>(null);
   const [editPhotoPreview, setEditPhotoPreview] = useState('');
+  const [editIsPublic, setEditIsPublic] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
   const [deleteConfirmation, setDeleteConfirmation] = useState('');
@@ -51,6 +52,7 @@ export default function GroupChat() {
           setEditName(data.group.name);
           setEditDesc(data.group.description);
           setEditPhotoPreview(data.group.photo);
+          setEditIsPublic(data.group.isPublic ?? true);
         } else {
           navigate('/groups');
         }
@@ -173,7 +175,8 @@ export default function GroupChat() {
         body: JSON.stringify({
           name: editName,
           description: editDesc,
-          photo: photoUrl
+          photo: photoUrl,
+          isPublic: editIsPublic
         })
       });
 
@@ -486,6 +489,21 @@ export default function GroupChat() {
                     onChange={(e) => setEditDesc(e.target.value)}
                     className="w-full bg-zinc-900 border border-white/10 rounded-xl px-3 py-2 text-sm text-white outline-none focus:border-white/30 transition-colors resize-none h-14"
                   />
+                </div>
+
+                {/* Visibility Toggle */}
+                <div className="flex items-center justify-between p-3 bg-white/5 border border-white/10 rounded-xl mt-2 mb-2">
+                  <div>
+                    <p className="text-sm font-medium text-white">Public Group</p>
+                    <p className="text-xs text-zinc-400">Anyone can see and join this group.</p>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setEditIsPublic(!editIsPublic)}
+                    className={`w-11 h-6 rounded-full transition-colors relative cursor-pointer flex items-center px-1 shrink-0 ${editIsPublic ? 'bg-white' : 'bg-zinc-700'}`}
+                  >
+                    <div className={`w-4 h-4 rounded-full transition-transform ${editIsPublic ? 'bg-black translate-x-5' : 'bg-zinc-400 translate-x-0'}`} />
+                  </button>
                 </div>
 
                 <button

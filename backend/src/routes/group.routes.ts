@@ -6,9 +6,11 @@ import { redisClient, io } from '../server';
 const router = Router();
 
 // GET /api/groups - Fetch all groups
-router.get('/', async (req, res) => {
+router.get('/', requireAuth, async (req: any, res: any) => {
   try {
-    const groups = await Group.find().sort({ createdAt: -1 });
+    const groups = await Group.find({
+      $or: [{ isPublic: true }, { adminId: req.user.id }]
+    }).sort({ createdAt: -1 });
     res.json({ groups });
   } catch (error) {
     console.error('Error fetching groups:', error);
@@ -31,7 +33,7 @@ router.get('/:roomId', async (req, res) => {
 // POST /api/groups - Create a group
 router.post('/', requireAuth, async (req: any, res: any) => {
   try {
-    const { name, description, photo } = req.body;
+    const { name, description, photo, isPublic } = req.body;
     if (!name) return res.status(400).json({ error: 'Name is required' });
 
     // Generate random room ID
@@ -42,6 +44,7 @@ router.post('/', requireAuth, async (req: any, res: any) => {
       name,
       description,
       photo,
+      isPublic: isPublic ?? true,
       adminId: req.user.id,
     });
 
@@ -56,7 +59,7 @@ router.post('/', requireAuth, async (req: any, res: any) => {
 // PUT /api/groups/:roomId - Update group (admin only)
 router.put('/:roomId', requireAuth, async (req: any, res: any) => {
   try {
-    const { name, description, photo } = req.body;
+    const { name, description, photo, isPublic } = req.body;
     const group = await Group.findOne({ roomId: req.params.roomId });
     
     if (!group) return res.status(404).json({ error: 'Group not found' });
@@ -67,6 +70,7 @@ router.put('/:roomId', requireAuth, async (req: any, res: any) => {
     group.name = name ?? group.name;
     group.description = description ?? group.description;
     group.photo = photo ?? group.photo;
+    if (isPublic !== undefined) group.isPublic = isPublic;
 
     await group.save();
     res.json({ group });

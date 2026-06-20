@@ -6,6 +6,7 @@ export interface IGroup extends Document {
   description: string;
   photo: string;
   adminId: mongoose.Types.ObjectId;
+  isPublic: boolean;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -36,6 +37,10 @@ const GroupSchema: Schema = new Schema(
       type: Schema.Types.ObjectId,
       ref: 'User',
       required: true,
+    },
+    isPublic: {
+      type: Boolean,
+      default: true,
     },
   },
   {
