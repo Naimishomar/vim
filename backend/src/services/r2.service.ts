@@ -11,7 +11,7 @@ const s3 = new S3Client({
   },
 });
 
-export const uploadToR2 = async (file: Express.Multer.File, folder: 'profiles' | 'ephemeral') => {
+export const uploadToR2 = async (file: Express.Multer.File, folder: 'profiles' | 'ephemeral' | 'groups') => {
   const fileExt = file.originalname.split('.').pop();
   const fileName = `${folder}/${uuidv4()}.${fileExt}`;
 

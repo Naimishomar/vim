@@ -283,7 +283,7 @@ export default function AdminDashboard() {
                         )}
                       </td>
                       <td className="px-6 py-4 text-zinc-500 text-xs">
-                        {new Date(u.createdAt).toLocaleDateString()}
+                        {new Date(u.createdAt).toLocaleString()}
                       </td>
                       <td className="px-6 py-4 text-right">
                         {u.role !== 'admin' && (

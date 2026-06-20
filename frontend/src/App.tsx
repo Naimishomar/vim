@@ -9,6 +9,8 @@ import Lobby from './pages/Lobby';
 import Terms from './pages/Terms';
 import Contact from './pages/Contact';
 import AdminDashboard from './pages/AdminDashboard';
+import Groups from './pages/Groups';
+import GroupChat from './pages/GroupChat';
 
 import OnboardingModal from './components/OnboardingModal';
 import { ReactLenis } from 'lenis/react';
@@ -43,6 +45,9 @@ function App() {
           <Route path="/" element={<Home />} />
           <Route path="/pricing" element={<Pricing />} />
           <Route path="/chat" element={<GlobalChat />} />
+          <Route path="/groups" element={<Groups />}>
+            <Route path=":roomId" element={<GroupChat />} />
+          </Route>
           <Route path="/mcp" element={<Registry />} />
           <Route path="/setup/:type" element={<Lobby />} />
           <Route path="/admin" element={<AdminDashboard />} />

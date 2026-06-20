@@ -95,4 +95,19 @@ router.delete('/history/:userId/:peerId', async (req, res) => {
   }
 });
 
+// GET /api/chat/groups - Fetch all active group rooms
+router.get('/groups', async (req, res) => {
+  try {
+    const keys = await redisClient.keys('group:msgs:*');
+    const groups = keys.map((key: string) => {
+      const roomId = key.replace('group:msgs:', '');
+      return { roomId };
+    });
+    res.json({ groups });
+  } catch (error) {
+    console.error('Error fetching groups:', error);
+    res.status(500).json({ error: 'Failed to fetch groups' });
+  }
+});
+
 export default router;

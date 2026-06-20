@@ -38,6 +38,18 @@ router.post('/profile', requireAuth, upload.single('file'), async (req: any, res
   }
 });
 
+// Group Photo Upload (Persistent)
+router.post('/group', requireAuth, upload.single('file'), async (req: any, res: any) => {
+  try {
+    if (!req.file) return res.status(400).json({ error: 'No file provided' });
+    const result = await uploadToR2(req.file, 'groups');
+    res.json({ url: result.url });
+  } catch (error) {
+    console.error('[Upload Group]', error);
+    res.status(500).json({ error: 'Failed to upload group photo' });
+  }
+});
+
 // Ephemeral Chat/Call Attachment Upload (Auto-deleted on fixed 6-hour schedule)
 router.post('/ephemeral', requireAuth, upload.single('file'), async (req: any, res: any) => {
   try {

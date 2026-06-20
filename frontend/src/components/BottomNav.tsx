@@ -1,5 +1,5 @@
 import { Link, useNavigate } from 'react-router-dom';
-import { Home as HomeIcon, MessageSquare, Video, Headphones as HeadphonesIcon, Crown } from 'lucide-react';
+import { Home as HomeIcon, MessageSquare, Video, Headphones as HeadphonesIcon, Crown, Users } from 'lucide-react';
 import { useAuthStore } from '../store/useAuthStore';
 
 interface BottomNavProps {
@@ -27,6 +27,10 @@ export default function BottomNav({ onRequiresAuth }: BottomNavProps) {
       <button onClick={() => handleProtectedAction('/chat')} className="flex flex-col items-center gap-1 text-zinc-400 hover:text-white transition-colors cursor-pointer">
         <MessageSquare size={20} />
         <span className="text-[10px] font-medium">Chat</span>
+      </button>
+      <button onClick={() => handleProtectedAction('/groups')} className="flex flex-col items-center gap-1 text-zinc-400 hover:text-white transition-colors cursor-pointer">
+        <Users size={20} />
+        <span className="text-[10px] font-medium">Groups</span>
       </button>
       <button onClick={() => handleProtectedAction('/setup/video')} className="flex flex-col items-center gap-1 text-zinc-400 hover:text-white transition-colors cursor-pointer">
         <Video size={20} />

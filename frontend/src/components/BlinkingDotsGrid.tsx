@@ -1,6 +1,6 @@
 import { useEffect, useRef } from 'react';
 
-export default function BlinkingDotsGrid() {
+export default function BlinkingDotsGrid({ opacity = 1 }: { opacity?: number } = {}) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
 
   useEffect(() => {
@@ -66,7 +66,7 @@ export default function BlinkingDotsGrid() {
 
         ctx.beginPath();
         ctx.arc(dot.x, dot.y, radius, 0, Math.PI * 2);
-        ctx.fillStyle = `rgba(255, 255, 255, ${dot.currentAlpha})`;
+        ctx.fillStyle = `rgba(255, 255, 255, ${dot.currentAlpha * opacity})`;
         ctx.fill();
       }
 

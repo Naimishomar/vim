@@ -6,6 +6,7 @@ import './socket/presence';
 import './socket/matchmaking';
 import './socket/webrtc';
 import './socket/chat';
+import './socket/groupChat';
 
 const start = async () => {
   await connectDB();
