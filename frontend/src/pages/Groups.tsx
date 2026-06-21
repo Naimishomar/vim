@@ -36,7 +36,12 @@ export default function Groups() {
   const fetchGroups = async () => {
     try {
       const backendUrl = import.meta.env.VITE_BACKEND_URL || 'http://localhost:5000';
-      const res = await fetch(`${backendUrl}/api/groups`);
+      const token = useAuthStore.getState().accessToken || localStorage.getItem('vibe_token');
+      const res = await fetch(`${backendUrl}/api/groups`, {
+        headers: {
+          Authorization: `Bearer ${token}`
+        }
+      });
       const data = await res.json();
       if (data.groups) {
         const sortedGroups = data.groups.sort((a: any, b: any) => {
