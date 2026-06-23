@@ -8,6 +8,7 @@ import SEO from '../components/SEO';
 import BlinkingDotsGrid from '../components/BlinkingDotsGrid';
 import { useAuthStore } from '../store/useAuthStore';
 import LoginModal from '../components/LoginModal';
+import FAQSection from '../components/FAQSection';
 
 const features = [
   {
@@ -156,6 +157,25 @@ export default function OmeTvAlternative() {
             Talk to strangers online, meet new friends, and enjoy high-quality video calling without giving up your privacy. Try Vibelly today and see why thousands are switching over.
           </p>
         </section>
+
+        <FAQSection faqs={[
+          {
+            question: "Why is Vibelly better than OmeTV?",
+            answer: "Unlike OmeTV, Vibelly does not force you to log in with Facebook or VK. We prioritize your privacy and offer complete anonymity while maintaining a safe, moderated environment."
+          },
+          {
+            question: "Do I need a Facebook account to use Vibelly?",
+            answer: "No! Vibelly is 100% login-free for random video chats. You do not need a Facebook, Google, or any social media account to connect with strangers."
+          },
+          {
+            question: "Is the video quality good?",
+            answer: "Yes, Vibelly uses modern WebRTC technology to provide crystal clear HD video quality, assuming your internet connection is stable."
+          },
+          {
+            question: "Is Vibelly free to use?",
+            answer: "Yes, our core random video chat feature is completely free to use for everyone around the world."
+          }
+        ]} />
 
         <Footer />
         <LoginModal isOpen={isLoginModalOpen} onClose={() => setIsLoginModalOpen(false)} />

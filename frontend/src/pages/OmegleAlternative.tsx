@@ -8,6 +8,7 @@ import SEO from '../components/SEO';
 import BlinkingDotsGrid from '../components/BlinkingDotsGrid';
 import { useAuthStore } from '../store/useAuthStore';
 import LoginModal from '../components/LoginModal';
+import FAQSection from '../components/FAQSection';
 
 const features = [
   {
@@ -203,6 +204,25 @@ export default function OmegleAlternative() {
             Experience the internet the way it was meant to be—anonymous, fun, and completely free. Start your random video call now and connect with someone on the other side of the world in less than a second.
           </p>
         </section>
+
+        <FAQSection faqs={[
+          {
+            question: "Is Vibelly a good alternative to Omegle?",
+            answer: "Yes! Vibelly is considered one of the best Omegle alternatives because it offers HD video quality, a clean dark-mode aesthetic, and strict moderation to keep the community safe, all without requiring an account."
+          },
+          {
+            question: "Do I need to sign up to use Vibelly?",
+            answer: "No, you don't need to sign up or provide any personal information to start using the random video chat. Just click start and instantly connect with strangers worldwide."
+          },
+          {
+            question: "Is Vibelly safe to use?",
+            answer: "We prioritize user safety above all else. Unlike Omegle, Vibelly uses advanced moderation tools and allows users to report inappropriate behavior instantly, ensuring a safe and clean environment."
+          },
+          {
+            question: "Can I use Vibelly on my phone?",
+            answer: "Absolutely. Vibelly is fully optimized for mobile browsers, meaning you can enjoy seamless video chat on your iPhone or Android device without downloading any apps."
+          }
+        ]} />
 
         <Footer />
         <LoginModal isOpen={isLoginModalOpen} onClose={() => setIsLoginModalOpen(false)} />

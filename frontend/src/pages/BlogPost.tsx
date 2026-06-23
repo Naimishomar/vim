@@ -36,6 +36,7 @@ const renderMarkdown = (content: string) => {
 export default function BlogPost() {
   const { slug } = useParams<{ slug: string }>();
   const [post, setPost] = useState<BlogPostData | null>(null);
+  const [relatedPosts, setRelatedPosts] = useState<BlogPostData[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -48,6 +49,14 @@ export default function BlogPost() {
         if (data.success) {
           setPost(data.data);
         }
+        
+        // Fetch related blogs
+        const relatedRes = await fetch(`${backendUrl}/api/blogs/related/${slug}`);
+        const relatedData = await relatedRes.json();
+        if (relatedData.success) {
+          setRelatedPosts(relatedData.data);
+        }
+
       } catch (error) {
         console.error('Failed to fetch blog', error);
       } finally {
@@ -105,6 +114,25 @@ export default function BlogPost() {
             <div className="article-content">
               {renderMarkdown(post.content)}
             </div>
+            
+            {/* Related Posts Section */}
+            {relatedPosts.length > 0 && (
+              <div className="mt-20 pt-12 border-t border-white/10">
+                <h3 className="text-2xl font-semibold mb-8">Read Next</h3>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+                  {relatedPosts.slice(0, 2).map((related) => (
+                    <Link 
+                      key={related.slug} 
+                      to={`/blog/${related.slug}`}
+                      className="block p-6 rounded-2xl bg-white/5 border border-white/10 hover:bg-white/10 transition-all group"
+                    >
+                      <h4 className="font-medium text-lg mb-2 group-hover:text-blue-400 transition-colors">{related.title}</h4>
+                      <p className="text-zinc-400 text-sm line-clamp-2">{related.description}</p>
+                    </Link>
+                  ))}
+                </div>
+              </div>
+            )}
           </motion.div>
         </main>
 

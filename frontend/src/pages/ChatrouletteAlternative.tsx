@@ -8,6 +8,7 @@ import SEO from '../components/SEO';
 import BlinkingDotsGrid from '../components/BlinkingDotsGrid';
 import { useAuthStore } from '../store/useAuthStore';
 import LoginModal from '../components/LoginModal';
+import FAQSection from '../components/FAQSection';
 
 const features = [
   {
@@ -156,6 +157,25 @@ export default function ChatrouletteAlternative() {
             Whether you want to talk to strangers via video, or use our audio-only mode, Vibelly provides the safest and most aesthetic random chat experience on the internet today.
           </p>
         </section>
+
+        <FAQSection faqs={[
+          {
+            question: "Is Vibelly a good Chatroulette alternative?",
+            answer: "Yes, Vibelly was built to be the modern successor to Chatroulette. We offer instant matching, HD video powered by WebRTC, and a sleek dark-mode interface that doesn't feel like it was built in 2009."
+          },
+          {
+            question: "Is it completely free?",
+            answer: "Absolutely. You can talk to random strangers online via video or voice completely for free, with no hidden charges or premium subscriptions required to use the core features."
+          },
+          {
+            question: "Are there bots on Vibelly?",
+            answer: "We use advanced AI screening to filter out bots, spam, and inappropriate content, ensuring you actually match with real humans."
+          },
+          {
+            question: "Do I need to download an app?",
+            answer: "No download required. Vibelly works seamlessly right in your browser on both desktop and mobile devices."
+          }
+        ]} />
 
         <Footer />
         <LoginModal isOpen={isLoginModalOpen} onClose={() => setIsLoginModalOpen(false)} />

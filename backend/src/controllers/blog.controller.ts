@@ -46,3 +46,21 @@ export const getBlogBySlug = async (req: Request, res: Response): Promise<void> 
     res.status(500).json({ success: false, message: 'Server error fetching blog' });
   }
 };
+
+export const getRelatedBlogs = async (req: Request, res: Response): Promise<void> => {
+  try {
+    const { slug } = req.params;
+    
+    // Fetch 3 random blogs excluding the current one
+    const relatedBlogs = await Blog.aggregate([
+      { $match: { slug: { $ne: slug } } },
+      { $sample: { size: 3 } },
+      { $project: { content: 0 } } // Exclude full content to save bandwidth
+    ]);
+
+    res.status(200).json({ success: true, data: relatedBlogs });
+  } catch (error) {
+    console.error('Error fetching related blogs:', error);
+    res.status(500).json({ success: false, message: 'Server error fetching related blogs' });
+  }
+};
