@@ -49,6 +49,30 @@ function App() {
     checkAuth();
   }, [checkAuth]);
 
+  // Track unique visits
+  useEffect(() => {
+    let visitorId = localStorage.getItem('vibe_visitor_id');
+    if (!visitorId) {
+      visitorId = crypto.randomUUID();
+      localStorage.setItem('vibe_visitor_id', visitorId);
+    }
+
+    const trackVisit = async () => {
+      try {
+        const backendUrl = import.meta.env.VITE_BACKEND_URL || 'http://localhost:5000';
+        await fetch(`${backendUrl}/api/analytics/visit`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ visitorId })
+        });
+      } catch (error) {
+        console.error('Failed to track visit', error);
+      }
+    };
+
+    trackVisit();
+  }, []);
+
   return (
     <HelmetProvider>
       <ReactLenis root>

@@ -70,4 +70,18 @@ router.get('/reports', requireAuth, requireAdmin, async (req, res) => {
   }
 });
 
+// GET /api/admin/analytics
+router.get('/analytics', requireAuth, requireAdmin, async (req, res) => {
+  try {
+    const today = new Date().toISOString().split('T')[0];
+    const { redisClient } = require('../server');
+    const uniqueVisitsToday = await redisClient.pfcount(`visits:${today}`);
+    
+    res.json({ uniqueVisitsToday });
+  } catch (error) {
+    console.error('Error fetching analytics:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
 export default router;

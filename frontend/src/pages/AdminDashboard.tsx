@@ -41,6 +41,7 @@ export default function AdminDashboard() {
   const navigate = useNavigate();
   const [users, setUsers] = useState<AdminUser[]>([]);
   const [reports, setReports] = useState<ReportData[]>([]);
+  const [uniqueVisitsToday, setUniqueVisitsToday] = useState<number>(0);
   const [isLoading, setIsLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
   const [activeTab, setActiveTab] = useState<'users' | 'reports'>('users');
@@ -58,11 +59,14 @@ export default function AdminDashboard() {
         const backendUrl = import.meta.env.VITE_BACKEND_URL || 'http://localhost:5000';
         const token = localStorage.getItem('vibe_token') || useAuthStore.getState().accessToken;
         
-        const [usersRes, reportsRes] = await Promise.all([
+        const [usersRes, reportsRes, analyticsRes] = await Promise.all([
           fetch(`${backendUrl}/api/admin/users`, {
             headers: { 'Authorization': `Bearer ${token}` }
           }),
           fetch(`${backendUrl}/api/admin/reports`, {
+            headers: { 'Authorization': `Bearer ${token}` }
+          }),
+          fetch(`${backendUrl}/api/admin/analytics`, {
             headers: { 'Authorization': `Bearer ${token}` }
           })
         ]);
@@ -75,6 +79,11 @@ export default function AdminDashboard() {
         if (reportsRes.ok) {
           const data = await reportsRes.json();
           setReports(data);
+        }
+
+        if (analyticsRes.ok) {
+          const data = await analyticsRes.json();
+          setUniqueVisitsToday(data.uniqueVisitsToday);
         }
       } catch (error) {
         console.error('Error fetching admin data:', error);
@@ -180,7 +189,7 @@ export default function AdminDashboard() {
         </div>
 
         {/* Stats */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-12">
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-12">
           <motion.div 
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
@@ -200,6 +209,19 @@ export default function AdminDashboard() {
             className="bg-zinc-900/40 border border-white/5 rounded-3xl p-6"
           >
             <div className="flex items-center gap-3 mb-4 text-zinc-400">
+              <Users size={18} />
+              <span className="text-sm font-medium uppercase tracking-wider">Unique Visits Today</span>
+            </div>
+            <p className="text-4xl font-light text-white">{isLoading ? '-' : uniqueVisitsToday}</p>
+          </motion.div>
+
+          <motion.div 
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.2 }}
+            className="bg-zinc-900/40 border border-white/5 rounded-3xl p-6"
+          >
+            <div className="flex items-center gap-3 mb-4 text-zinc-400">
               <Shield size={18} />
               <span className="text-sm font-medium uppercase tracking-wider">Admins</span>
             </div>
@@ -209,7 +231,7 @@ export default function AdminDashboard() {
           <motion.div 
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.2 }}
+            transition={{ delay: 0.3 }}
             className="bg-zinc-900/40 border border-white/5 rounded-3xl p-6"
           >
             <div className="flex items-center gap-3 mb-4 text-zinc-400">
