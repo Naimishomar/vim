@@ -38,6 +38,7 @@ export default function Footer() {
           <Link to="/omegle-alternative" className="text-zinc-400 hover:text-white transition-colors">Omegle Alternative</Link>
           <Link to="/ometv-alternative" className="text-zinc-400 hover:text-white transition-colors">OmeTV Alternative</Link>
           <Link to="/chatroulette-alternative" className="text-zinc-400 hover:text-white transition-colors">Chatroulette Alternative</Link>
+          <Link to="/omegle-unbanned" className="text-zinc-400 hover:text-white transition-colors">Omegle Unban Guide</Link>
         </div>
 
         {/* Contact info */}
