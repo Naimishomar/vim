@@ -31,20 +31,21 @@ export default function Footer() {
           <Link to="/terms" className="text-zinc-400 hover:text-white transition-colors">Terms & Conditions</Link>
         </div>
 
+        {/* Resources / Alternatives */}
+        <div className="flex flex-col gap-4">
+          <h4 className="text-white font-semibold mb-2">Resources</h4>
+          <Link to="/blog" className="text-zinc-400 hover:text-white transition-colors">Blog & Guides</Link>
+          <Link to="/omegle-alternative" className="text-zinc-400 hover:text-white transition-colors">Omegle Alternative</Link>
+          <Link to="/ometv-alternative" className="text-zinc-400 hover:text-white transition-colors">OmeTV Alternative</Link>
+          <Link to="/chatroulette-alternative" className="text-zinc-400 hover:text-white transition-colors">Chatroulette Alternative</Link>
+        </div>
+
         {/* Contact info */}
-        <div className="flex flex-col gap-4 md:col-span-2">
+        <div className="flex flex-col gap-4">
           <h4 className="text-white font-semibold mb-2">Contact Us</h4>
-          <div className="flex items-start gap-3 text-zinc-400">
-            <MapPin className="w-5 h-5 shrink-0 text-white mt-0.5" />
-            <p>K Block ,<br/>Near Ratanlal Garden<br/>Kanpur, Uttar Pradesh<br/>India</p>
-          </div>
           <div className="flex items-center gap-3 text-zinc-400">
             <Mail className="w-5 h-5 shrink-0 text-white" />
             <p>vibellyofficial@gmail.com</p>
-          </div>
-          <div className="flex items-center gap-3 text-zinc-400">
-            <Phone className="w-5 h-5 shrink-0 text-white" />
-            <p>Will Disclosed Soon</p>
           </div>
           <div className="flex items-center gap-3 text-zinc-400">
             <svg className="w-5 h-5 shrink-0 text-white" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">

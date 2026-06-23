@@ -14,6 +14,8 @@ import uploadRoutes from './routes/upload.routes';
 import chatRoutes from './routes/chat.routes';
 import groupRoutes from './routes/group.routes';
 import adminRoutes from './routes/admin.routes';
+import blogRoutes from './routes/blog.routes';
+import sitemapRoutes from './routes/sitemap.routes';
 import passport from './config/passport';
 import path from 'path';
 
@@ -40,6 +42,8 @@ app.use('/api/upload', uploadRoutes);
 app.use('/api/chat', chatRoutes);
 app.use('/api/groups', groupRoutes);
 app.use('/api/admin', adminRoutes);
+app.use('/api/blogs', blogRoutes);
+app.use('/sitemap.xml', sitemapRoutes);
 
 
 app.get("/", (req,res)=>{

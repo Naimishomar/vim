@@ -11,6 +11,11 @@ import Contact from './pages/Contact';
 import AdminDashboard from './pages/AdminDashboard';
 import Groups from './pages/Groups';
 import GroupChat from './pages/GroupChat';
+import OmegleAlternative from './pages/OmegleAlternative';
+import OmeTvAlternative from './pages/OmeTvAlternative';
+import ChatrouletteAlternative from './pages/ChatrouletteAlternative';
+import Blog from './pages/Blog';
+import BlogPost from './pages/BlogPost';
 
 import OnboardingModal from './components/OnboardingModal';
 import { ReactLenis } from 'lenis/react';
@@ -57,6 +62,11 @@ function App() {
           <Route path="/oauth-callback" element={<OAuthCallback />} />
           <Route path="/terms" element={<Terms />} />
           <Route path="/contact" element={<Contact />} />
+          <Route path="/omegle-alternative" element={<OmegleAlternative />} />
+          <Route path="/ometv-alternative" element={<OmeTvAlternative />} />
+          <Route path="/chatroulette-alternative" element={<ChatrouletteAlternative />} />
+          <Route path="/blog" element={<Blog />} />
+          <Route path="/blog/:slug" element={<BlogPost />} />
         </Routes>
       </Router>
       </ReactLenis>

@@ -39,6 +39,24 @@ export default function SEO({
       <meta property="twitter:title" content={title} />
       <meta property="twitter:description" content={description} />
       <meta property="twitter:image" content={imageUrl} />
+
+      {/* JSON-LD Structured Data for Articles */}
+      {type === 'article' && (
+        <script type="application/ld+json">
+          {JSON.stringify({
+            "@context": "https://schema.org",
+            "@type": "Article",
+            "headline": title,
+            "image": [imageUrl],
+            "datePublished": new Date().toISOString(),
+            "author": [{
+              "@type": "Organization",
+              "name": "Vibelly",
+              "url": siteUrl
+            }]
+          })}
+        </script>
+      )}
     </Helmet>
   );
 }
