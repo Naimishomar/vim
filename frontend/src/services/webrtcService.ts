@@ -62,7 +62,12 @@ class WebRTCService {
     try {
       this.localStream = await navigator.mediaDevices.getUserMedia({
         video: videoEnabled
-          ? { width: { ideal: idealWidth }, height: { ideal: idealHeight }, facingMode: 'user' }
+          ? { 
+              width: { ideal: idealWidth }, 
+              height: { ideal: idealHeight }, 
+              facingMode: 'user',
+              frameRate: { max: 15 } // Crucial for slow networks: halves bandwidth
+            }
           : false,
         audio: {
           echoCancellation: true,

@@ -1,5 +1,6 @@
 import express from 'express';
 import cors from 'cors';
+import compression from 'compression';
 import { createServer } from 'http';
 import { Server } from 'socket.io';
 import mongoose from 'mongoose';
@@ -29,6 +30,8 @@ const corsOptions = {
   methods: ['GET', 'POST', 'PUT', 'DELETE'],
 };
 
+// Compression middleware (compresses API responses for slow networks)
+app.use(compression());
 app.use(cors(corsOptions));
 app.use(express.json());
 app.use(passport.initialize());
