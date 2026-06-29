@@ -19,9 +19,11 @@ interface AuthState {
   accessToken: string | null;
   refreshToken: string | null;
   isAuthenticated: boolean;
+  guestAccessEnabled: boolean;
   setAuth: (user: User, accessToken: string, refreshToken: string) => void;
   logout: () => void;
   checkAuth: () => Promise<void>;
+  fetchSettings: () => Promise<void>;
 }
 
 export const useAuthStore = create<AuthState>()(
@@ -31,6 +33,7 @@ export const useAuthStore = create<AuthState>()(
       accessToken: null,
       refreshToken: null,
       isAuthenticated: false,
+      guestAccessEnabled: true,
       
       setAuth: (user, accessToken, refreshToken) => {
         set({ user, accessToken, refreshToken, isAuthenticated: true });
@@ -83,6 +86,19 @@ export const useAuthStore = create<AuthState>()(
           }
         } catch (error) {
           console.error('checkAuth failed:', error);
+        }
+      },
+      
+      fetchSettings: async () => {
+        try {
+          const backendUrl = import.meta.env.VITE_BACKEND_URL || 'http://localhost:5000';
+          const res = await fetch(`${backendUrl}/api/settings`);
+          if (res.ok) {
+            const data = await res.json();
+            set({ guestAccessEnabled: data.guestAccessEnabled });
+          }
+        } catch (error) {
+          console.error('Failed to fetch settings:', error);
         }
       },
     }),

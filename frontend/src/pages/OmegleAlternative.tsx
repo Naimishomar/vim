@@ -36,10 +36,10 @@ const features = [
 export default function OmegleAlternative() {
   const navigate = useNavigate();
   const [isLoginModalOpen, setIsLoginModalOpen] = useState(false);
-  const { isAuthenticated } = useAuthStore();
+  const { isAuthenticated, guestAccessEnabled } = useAuthStore();
 
   const handleProtectedNavigation = (path: string) => {
-    if (!isAuthenticated) {
+    if (!isAuthenticated && !guestAccessEnabled) {
       setIsLoginModalOpen(true);
     } else {
       navigate(path);

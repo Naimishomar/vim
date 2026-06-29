@@ -166,10 +166,10 @@ export default function Home() {
   const navigate = useNavigate();
   const [activeStep, setActiveStep] = useState('find');
   const [isLoginModalOpen, setIsLoginModalOpen] = useState(false);
-  const { isAuthenticated } = useAuthStore();
+  const { isAuthenticated, guestAccessEnabled } = useAuthStore();
 
   const handleProtectedNavigation = (path: string) => {
-    if (!isAuthenticated) {
+    if (!isAuthenticated && !guestAccessEnabled) {
       setIsLoginModalOpen(true);
     } else {
       navigate(path);

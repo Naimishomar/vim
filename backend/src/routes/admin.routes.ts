@@ -84,4 +84,36 @@ router.get('/analytics', requireAuth, requireAdmin, async (req, res) => {
   }
 });
 
+// GET /api/admin/settings
+router.get('/settings', requireAuth, requireAdmin, async (req, res) => {
+  try {
+    const { redisClient } = require('../server');
+    const guestAccessEnabled = await redisClient.get('appSettings:guestAccessEnabled');
+    
+    res.json({ 
+      guestAccessEnabled: guestAccessEnabled === null ? true : guestAccessEnabled === 'true' 
+    });
+  } catch (error) {
+    console.error('Error fetching admin settings:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+// POST /api/admin/settings
+router.post('/settings', requireAuth, requireAdmin, async (req, res) => {
+  try {
+    const { redisClient } = require('../server');
+    const { guestAccessEnabled } = req.body;
+    
+    if (typeof guestAccessEnabled === 'boolean') {
+      await redisClient.set('appSettings:guestAccessEnabled', guestAccessEnabled ? 'true' : 'false');
+    }
+    
+    res.json({ success: true, guestAccessEnabled });
+  } catch (error) {
+    console.error('Error updating admin settings:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
 export default router;

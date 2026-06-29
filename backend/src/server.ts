@@ -18,8 +18,8 @@ import adminRoutes from './routes/admin.routes';
 import blogRoutes from './routes/blog.routes';
 import sitemapRoutes from './routes/sitemap.routes';
 import analyticsRoutes from './routes/analytics.routes';
+import settingsRoutes from './routes/settings.routes';
 import passport from './config/passport';
-import path from 'path';
 
 const app = express();
 const httpServer = createServer(app);
@@ -48,6 +48,7 @@ app.use('/api/groups', groupRoutes);
 app.use('/api/admin', adminRoutes);
 app.use('/api/blogs', blogRoutes);
 app.use('/api/analytics', analyticsRoutes);
+app.use('/api/settings', settingsRoutes);
 app.use('/sitemap.xml', sitemapRoutes);
 
 

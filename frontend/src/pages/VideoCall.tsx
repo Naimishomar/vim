@@ -266,9 +266,11 @@ export default function VideoCall() {
 
   const handleStartSearch = (previousPeerSocketId?: string | null) => {
     useCallStore.getState().setSearching(true);
-    const params = new URLSearchParams(location.search);
-    const targetCountry = params.get('country');
-    const genderPrefStr = params.get('gender');
+    
+    // Read from secure router state
+    const state = location.state as { targetCountry?: string; targetGender?: string } | null;
+    const targetCountry = state?.targetCountry;
+    const genderPrefStr = state?.targetGender;
     
     let targetGender = undefined;
     if (genderPrefStr === 'Opposite Gender') targetGender = 'opposite';

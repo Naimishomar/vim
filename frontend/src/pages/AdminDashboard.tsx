@@ -37,7 +37,7 @@ interface ReportData {
 }
 
 export default function AdminDashboard() {
-  const { user } = useAuthStore();
+  const { user, guestAccessEnabled, fetchSettings } = useAuthStore();
   const navigate = useNavigate();
   const [users, setUsers] = useState<AdminUser[]>([]);
   const [reports, setReports] = useState<ReportData[]>([]);
@@ -137,6 +137,29 @@ export default function AdminDashboard() {
     r.reportedUser?.name.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
+  const handleToggleGuestAccess = async () => {
+    try {
+      const backendUrl = import.meta.env.VITE_BACKEND_URL || 'http://localhost:5000';
+      const token = localStorage.getItem('vibe_token') || useAuthStore.getState().accessToken;
+      
+      const response = await fetch(`${backendUrl}/api/admin/settings`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({ guestAccessEnabled: !guestAccessEnabled })
+      });
+      
+      if (response.ok) {
+        // Refresh the global state to reflect the new setting
+        await fetchSettings();
+      }
+    } catch (error) {
+      console.error('Error toggling guest access:', error);
+    }
+  };
+
   return (
     <div className="min-h-screen bg-black text-white p-6 md:p-12 font-sans selection:bg-white/30 selection:text-white">
       <div className="max-w-7xl mx-auto">
@@ -186,6 +209,32 @@ export default function AdminDashboard() {
               </button>
             </div>
           </div>
+        </div>
+
+        {/* Security Controls */}
+        <div className="bg-zinc-900/40 border border-white/5 rounded-3xl p-6 mb-8 flex items-center justify-between">
+          <div className="flex items-center gap-4">
+            <div className={`w-12 h-12 rounded-full flex items-center justify-center transition-colors ${guestAccessEnabled ? 'bg-emerald-500/20 text-emerald-400' : 'bg-red-500/20 text-red-400'}`}>
+              <Shield size={24} />
+            </div>
+            <div>
+              <h3 className="text-lg font-medium text-white">Guest Access</h3>
+              <p className="text-sm text-zinc-400 mt-1">
+                {guestAccessEnabled 
+                  ? "Unauthenticated users CAN access matchmaking and chat." 
+                  : "Unauthenticated users are completely BLOCKED from core features."}
+              </p>
+            </div>
+          </div>
+          
+          <button 
+            onClick={handleToggleGuestAccess}
+            className={`relative inline-flex h-8 w-14 items-center rounded-full transition-colors focus:outline-none ${guestAccessEnabled ? 'bg-emerald-500' : 'bg-zinc-600'}`}
+          >
+            <span
+              className={`inline-block h-6 w-6 transform rounded-full bg-white transition-transform ${guestAccessEnabled ? 'translate-x-7' : 'translate-x-1'}`}
+            />
+          </button>
         </div>
 
         {/* Stats */}

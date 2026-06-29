@@ -44,10 +44,12 @@ const PageLoader = () => (
 
 function App() {
   const checkAuth = useAuthStore(state => state.checkAuth);
+  const fetchSettings = useAuthStore(state => state.fetchSettings);
 
   useEffect(() => {
     checkAuth();
-  }, [checkAuth]);
+    fetchSettings();
+  }, [checkAuth, fetchSettings]);
 
   // Track unique visits
   useEffect(() => {

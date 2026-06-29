@@ -18,7 +18,6 @@ export default function Lobby() {
   const [targetCountry, setTargetCountry] = useState(() => localStorage.getItem('vibe_target_country') || 'Global');
   const [isCountryDropdownOpen, setIsCountryDropdownOpen] = useState(false);
   const [targetGender, setTargetGender] = useState(() => localStorage.getItem('vibe_target_gender') || 'Opposite Gender');
-  const [isGenderDropdownOpen, setIsGenderDropdownOpen] = useState(false);
   const { user, isAuthenticated } = useAuthStore();
   
   const COMMON_COUNTRIES = [
@@ -108,11 +107,13 @@ export default function Lobby() {
       // This prevents "device in use" errors on some browsers
       stream.getTracks().forEach(track => track.stop());
     }
-    const targetQuery = new URLSearchParams();
-    if (targetCountry !== 'Global') targetQuery.append('country', targetCountry);
-    if (isAuthenticated && user?.premiumStatus) targetQuery.append('gender', targetGender);
-    const queryStr = targetQuery.toString() ? `?${targetQuery.toString()}` : '';
-    navigate(`/call/${isAudioOnly ? 'audio' : 'video'}${queryStr}`);
+    
+    navigate(`/call/${isAudioOnly ? 'audio' : 'video'}`, { 
+      state: { 
+        targetCountry: targetCountry !== 'Global' ? targetCountry : undefined,
+        targetGender: (isAuthenticated && user?.premiumStatus) ? targetGender : undefined 
+      } 
+    });
   };
 
   return (
@@ -308,41 +309,26 @@ export default function Lobby() {
                 </AnimatePresence>
 
                 {/* Gender Preference */}
-                <label className="text-sm text-zinc-300 font-medium mb-2 mt-6 block">Gender Preference (Premium)</label>
-                <div 
-                  className="relative cursor-pointer"
-                  onClick={() => setIsGenderDropdownOpen(!isGenderDropdownOpen)}
-                >
-                  <div className="w-full bg-zinc-800 border border-white/10 rounded-xl py-3 px-4 text-white focus:outline-none focus:border-white/50 transition-colors flex items-center justify-between">
-                    <span>{targetGender}</span>
-                    <ChevronDown className={`w-5 h-5 text-zinc-500 transition-transform ${isGenderDropdownOpen ? 'rotate-180' : ''}`} />
-                  </div>
+                <label className="text-sm text-zinc-300 font-medium mb-3 mt-6 block">Gender Preference (Premium)</label>
+                <div className="grid grid-cols-3 gap-2">
+                  {['Opposite', 'Same', 'Random'].map((g) => {
+                    const fullGender = g === 'Random' ? 'Random Gender' : `${g} Gender`;
+                    const isSelected = targetGender === fullGender;
+                    return (
+                      <button
+                        key={g}
+                        onClick={() => setTargetGender(fullGender)}
+                        className={`py-2 px-3 rounded-xl text-sm font-medium transition-all ${
+                          isSelected
+                            ? 'bg-white text-black shadow-[0_0_15px_rgba(255,255,255,0.3)]'
+                            : 'bg-zinc-800 text-zinc-400 hover:bg-zinc-700 hover:text-white border border-white/5'
+                        }`}
+                      >
+                        {g}
+                      </button>
+                    );
+                  })}
                 </div>
-
-                <AnimatePresence>
-                  {isGenderDropdownOpen && (
-                    <motion.div
-                      initial={{ opacity: 0, y: -10 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      exit={{ opacity: 0, y: -10 }}
-                      className="absolute z-50 w-full mt-2 bg-zinc-800 border border-white/10 rounded-xl shadow-2xl overflow-hidden"
-                    >
-                      {['Opposite Gender', 'Same Gender', 'Random Gender'].map(g => (
-                        <div
-                          key={g}
-                          onClick={() => {
-                            setTargetGender(g);
-                            setIsGenderDropdownOpen(false);
-                          }}
-                          className={`px-4 py-3 cursor-pointer hover:bg-white/10 transition-colors text-sm ${targetGender === g ? 'bg-white/5 text-white font-medium' : 'text-zinc-400'}`}
-                        >
-                          {g}
-                        </div>
-                      ))}
-                    </motion.div>
-                  )}
-                </AnimatePresence>
-
               </div>
             )}
 
@@ -374,10 +360,6 @@ export default function Lobby() {
                 <ArrowRight size={18} />
               </motion.button>
             )}
-            
-            <p className="text-center text-[11px] text-zinc-500 mt-4">
-              Your IP is securely masked via Cloudflare WebRTC.
-            </p>
           </motion.div>
 
         </div>

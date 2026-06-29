@@ -11,15 +11,23 @@ export default function Navbar() {
   const [isLoginModalOpen, setIsLoginModalOpen] = useState(false);
   const [isSettingsModalOpen, setIsSettingsModalOpen] = useState(false);
   const [dropdownOpen, setDropdownOpen] = useState(false);
+  const [liveUsers, setLiveUsers] = useState(5500 + Math.floor(Math.random() * 500));
   const dropdownRef = useRef<HTMLDivElement>(null);
   
-  const { user, isAuthenticated, logout } = useAuthStore();
+  const { user, isAuthenticated, logout, guestAccessEnabled } = useAuthStore();
   const navigate = useNavigate();
 
   const handleLogout = () => {
     logout();
     setDropdownOpen(false);
   };
+
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setLiveUsers(5500 + Math.floor(Math.random() * 500));
+    }, 3000);
+    return () => clearInterval(interval);
+  }, []);
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -32,7 +40,7 @@ export default function Navbar() {
   }, []);
 
   const handleProtectedAction = (path: string) => {
-    if (!isAuthenticated) {
+    if (!isAuthenticated && !guestAccessEnabled) {
       setIsLoginModalOpen(true);
     } else {
       navigate(path);
@@ -151,9 +159,20 @@ export default function Navbar() {
               >
                 Sign Up
               </button>
+
+              <div className="hidden sm:flex items-center gap-2 px-3 py-2 ml-5  bg-zinc-900/80 border border-white/30 rounded-full backdrop-blur-md">
+                <div className="relative flex h-2 w-2">
+                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                  <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
+                </div>
+                <span className="text-xs font-medium text-zinc-300">
+                  <strong className="text-white font-semibold">{liveUsers.toLocaleString()}</strong> online
+                </span>
+              </div>
             </div>
           )}
         </div>
+
       </nav>
 
       <BottomNav onRequiresAuth={() => setIsLoginModalOpen(true)} />

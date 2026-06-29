@@ -7,11 +7,11 @@ interface BottomNavProps {
 }
 
 export default function BottomNav({ onRequiresAuth }: BottomNavProps) {
-  const { isAuthenticated } = useAuthStore();
+  const { isAuthenticated, guestAccessEnabled } = useAuthStore();
   const navigate = useNavigate();
 
   const handleProtectedAction = (path: string) => {
-    if (!isAuthenticated) {
+    if (!isAuthenticated && !guestAccessEnabled) {
       onRequiresAuth();
     } else {
       navigate(path);
