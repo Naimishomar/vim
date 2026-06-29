@@ -20,5 +20,6 @@ exports.ENV = {
     CLOUDFLARE_API_TOKEN: process.env.CLOUDFLARE_API_TOKEN || 'mock_api_token',
     RAZORPAY_KEY_ID: process.env.RAZORPAY_KEY_ID || '',
     RAZORPAY_KEY_SECRET: process.env.RAZORPAY_KEY_SECRET || '',
+    FRONTEND_URL: process.env.FRONTEND_URL || 'https://vibelly.vercel.app',
 };
 //# sourceMappingURL=env.js.map

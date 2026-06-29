@@ -1,4 +1,4 @@
-export declare const uploadToR2: (file: Express.Multer.File, folder: "profiles" | "ephemeral") => Promise<{
+export declare const uploadToR2: (file: Express.Multer.File, folder: "profiles" | "ephemeral" | "groups") => Promise<{
     url: string;
     s3Key: string;
 }>;

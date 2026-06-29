@@ -23,7 +23,7 @@ export const login = async (req: Request, res: Response): Promise<void> => {
       await user.save();
     }
 
-    const tokens = generateTokens(user._id as any);
+    const tokens = generateTokens(user);
     res.json({ user, ...tokens });
   } catch (error) {
     res.status(500).json({ error: 'Internal Server Error' });
@@ -46,7 +46,7 @@ export const refresh = async (req: Request, res: Response): Promise<void> => {
       return;
     }
 
-    const tokens = generateTokens(user._id as any);
+    const tokens = generateTokens(user);
     res.json({ ...tokens });
   } catch (error) {
     res.status(401).json({ error: 'Invalid refresh token' });

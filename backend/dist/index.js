@@ -7,6 +7,7 @@ require("./socket/presence");
 require("./socket/matchmaking");
 require("./socket/webrtc");
 require("./socket/chat");
+require("./socket/groupChat");
 const start = async () => {
     await (0, server_1.connectDB)();
     await (0, server_1.connectRedis)();

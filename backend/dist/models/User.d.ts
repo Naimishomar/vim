@@ -11,12 +11,14 @@ export interface IUser extends Document {
     gender?: string;
     country?: string;
     profileImage?: string;
+    role: string;
     interests: string[];
     premiumStatus: boolean;
     premiumExpiryDate?: Date;
     blockedUsers: mongoose.Types.ObjectId[];
     chatsThisWeek: number;
     lastChatResetDate: Date;
+    isBanned: boolean;
     createdAt: Date;
     updatedAt: Date;
 }

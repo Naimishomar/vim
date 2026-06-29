@@ -46,12 +46,14 @@ const UserSchema = new mongoose_1.Schema({
     gender: { type: String, enum: ['male', 'female', 'other'] },
     country: { type: String },
     profileImage: { type: String },
+    role: { type: String, enum: ['user', 'admin'], default: 'user' },
     interests: [{ type: String }],
     premiumStatus: { type: Boolean, default: false },
     premiumExpiryDate: { type: Date },
     blockedUsers: [{ type: mongoose_1.Schema.Types.ObjectId, ref: 'User' }],
     chatsThisWeek: { type: Number, default: 0 },
     lastChatResetDate: { type: Date, default: Date.now },
+    isBanned: { type: Boolean, default: false },
 }, {
     timestamps: true,
 });

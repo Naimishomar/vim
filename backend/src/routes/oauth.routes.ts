@@ -21,7 +21,9 @@ const handleAuthSuccess = (req: any, res: any) => {
     username: user.username, 
     email: user.email,
     profileImage: user.profileImage,
-    premiumStatus: user.premiumStatus
+    premiumStatus: user.premiumStatus,
+    gender: user.gender,
+    country: user.country
   };
   
   const accessToken = jwt.sign(payload, ENV.JWT_SECRET, { expiresIn: '15m' });

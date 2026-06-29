@@ -11,5 +11,6 @@ export declare const ENV: {
     CLOUDFLARE_API_TOKEN: string;
     RAZORPAY_KEY_ID: string;
     RAZORPAY_KEY_SECRET: string;
+    FRONTEND_URL: string;
 };
 //# sourceMappingURL=env.d.ts.map

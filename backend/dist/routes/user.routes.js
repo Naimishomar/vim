@@ -62,5 +62,30 @@ router.post('/report', auth_middleware_1.requireAuth, async (req, res) => {
         res.status(500).json({ error: 'Failed to report user' });
     }
 });
+// Endpoint to search users by username or name
+router.get('/search', auth_middleware_1.requireAuth, async (req, res) => {
+    try {
+        const { q } = req.query;
+        if (!q || typeof q !== 'string') {
+            return res.json({ users: [] });
+        }
+        // Perform case-insensitive regex search
+        const users = await User_1.default.find({
+            $or: [
+                { username: { $regex: q, $options: 'i' } },
+                { name: { $regex: q, $options: 'i' } }
+            ],
+            isBanned: false
+        })
+            .select('_id name username profileImage premiumStatus')
+            .limit(20)
+            .lean();
+        res.json({ users });
+    }
+    catch (error) {
+        console.error('Error searching users:', error);
+        res.status(500).json({ error: 'Failed to search users' });
+    }
+});
 exports.default = router;
 //# sourceMappingURL=user.routes.js.map

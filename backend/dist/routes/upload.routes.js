@@ -39,6 +39,19 @@ router.post('/profile', auth_middleware_1.requireAuth, upload.single('file'), as
         res.status(500).json({ error: 'Failed to upload profile photo' });
     }
 });
+// Group Photo Upload (Persistent)
+router.post('/group', auth_middleware_1.requireAuth, upload.single('file'), async (req, res) => {
+    try {
+        if (!req.file)
+            return res.status(400).json({ error: 'No file provided' });
+        const result = await (0, r2_service_1.uploadToR2)(req.file, 'groups');
+        res.json({ url: result.url });
+    }
+    catch (error) {
+        console.error('[Upload Group]', error);
+        res.status(500).json({ error: 'Failed to upload group photo' });
+    }
+});
 // Ephemeral Chat/Call Attachment Upload (Auto-deleted on fixed 6-hour schedule)
 router.post('/ephemeral', auth_middleware_1.requireAuth, upload.single('file'), async (req, res) => {
     try {

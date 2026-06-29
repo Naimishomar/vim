@@ -1,10 +1,33 @@
 "use strict";
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
 Object.defineProperty(exports, "__esModule", { value: true });
 const server_1 = require("../server");
 const matchmaking_1 = require("../redis/matchmaking");
+const User_1 = __importDefault(require("../models/User"));
 server_1.io.on('connection', (socket) => {
     socket.on('search', async (data) => {
-        const { userId, queueName = 'random-video-480', targetCountry, targetGender, previousPeerSocketId } = data;
+        const { userId, queueName = 'random-video-480', targetCountry, previousPeerSocketId } = data;
+        let { targetGender } = data;
+        // Security Check: Validate premium status for gender filtering
+        if (targetGender && targetGender !== 'random') {
+            try {
+                if (!userId || userId.startsWith('guest-')) {
+                    targetGender = undefined; // Guests cannot use gender filter
+                }
+                else {
+                    const user = await User_1.default.findById(userId).select('premiumStatus');
+                    if (!user || !user.premiumStatus) {
+                        targetGender = undefined; // Non-premium users cannot use gender filter
+                    }
+                }
+            }
+            catch (err) {
+                console.error('Error validating premium status for gender filter:', err);
+                targetGender = undefined; // Fail safe
+            }
+        }
         console.log(`User ${userId} started searching in ${queueName} with targetCountry ${targetCountry || 'global'} and targetGender ${targetGender || 'default'}`);
         await (0, matchmaking_1.removeFromQueue)(socket.id, queueName);
         await (0, matchmaking_1.addToQueue)(socket.id, userId, queueName, targetCountry, targetGender, previousPeerSocketId);

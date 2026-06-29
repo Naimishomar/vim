@@ -1,7 +1,12 @@
 "use strict";
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
 Object.defineProperty(exports, "__esModule", { value: true });
 const express_1 = require("express");
 const server_1 = require("../server");
+const auth_middleware_1 = require("../middlewares/auth.middleware");
+const User_1 = __importDefault(require("../models/User"));
 const router = (0, express_1.Router)();
 // GET /api/chat/online - Fetch all online users
 router.get('/online', async (req, res) => {
@@ -24,6 +29,32 @@ router.get('/online', async (req, res) => {
     catch (error) {
         console.error('Error fetching online users:', error);
         res.status(500).json({ error: 'Failed to fetch online users' });
+    }
+});
+// GET /api/chat/inbox - Fetch recent chat partners
+router.get('/inbox', auth_middleware_1.requireAuth, async (req, res) => {
+    try {
+        const userId = req.user.id;
+        // Auto-remove expired chats (older than 24h)
+        const twentyFourHoursAgo = Date.now() - (24 * 60 * 60 * 1000);
+        await server_1.redisClient.zremrangebyscore(`inbox:${userId}`, 0, twentyFourHoursAgo);
+        // Get remaining recent chats (sorted by most recent first)
+        // ZRANGE with rev: true returns array of member strings
+        const recentUserIds = (await server_1.redisClient.zrange(`inbox:${userId}`, 0, -1, { rev: true }));
+        if (!recentUserIds || recentUserIds.length === 0) {
+            return res.json({ inbox: [] });
+        }
+        // Fetch user details from MongoDB
+        const users = await User_1.default.find({ _id: { $in: recentUserIds } })
+            .select('_id name username profileImage premiumStatus')
+            .lean();
+        // Map the users to match the sorted order from Redis
+        const inbox = recentUserIds.map(id => users.find(u => u._id.toString() === id)).filter(Boolean);
+        res.json({ inbox });
+    }
+    catch (error) {
+        console.error('Error fetching inbox:', error);
+        res.status(500).json({ error: 'Failed to fetch inbox' });
     }
 });
 // GET /api/chat/history/:userId/:peerId - Fetch up to 25 latest messages
@@ -63,6 +94,21 @@ router.delete('/history/:userId/:peerId', async (req, res) => {
     catch (error) {
         console.error('Error deleting chat history:', error);
         res.status(500).json({ error: 'Failed to clear chat history' });
+    }
+});
+// GET /api/chat/groups - Fetch all active group rooms
+router.get('/groups', async (req, res) => {
+    try {
+        const keys = await server_1.redisClient.keys('group:msgs:*');
+        const groups = keys.map((key) => {
+            const roomId = key.replace('group:msgs:', '');
+            return { roomId };
+        });
+        res.json({ groups });
+    }
+    catch (error) {
+        console.error('Error fetching groups:', error);
+        res.status(500).json({ error: 'Failed to fetch groups' });
     }
 });
 exports.default = router;
