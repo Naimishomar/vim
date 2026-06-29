@@ -12,7 +12,7 @@ router.get('/', async (req, res) => {
     if (guestAccessEnabled === null) {
       res.json({ guestAccessEnabled: true });
     } else {
-      res.json({ guestAccessEnabled: guestAccessEnabled === 'true' });
+      res.json({ guestAccessEnabled: guestAccessEnabled === 'true' || guestAccessEnabled === true });
     }
   } catch (error) {
     console.error('Error fetching settings:', error);

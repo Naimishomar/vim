@@ -91,7 +91,7 @@ router.get('/settings', requireAuth, requireAdmin, async (req, res) => {
     const guestAccessEnabled = await redisClient.get('appSettings:guestAccessEnabled');
     
     res.json({ 
-      guestAccessEnabled: guestAccessEnabled === null ? true : guestAccessEnabled === 'true' 
+      guestAccessEnabled: guestAccessEnabled === null ? true : guestAccessEnabled === 'true' || guestAccessEnabled === true
     });
   } catch (error) {
     console.error('Error fetching admin settings:', error);
