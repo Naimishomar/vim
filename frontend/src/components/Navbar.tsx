@@ -75,6 +75,17 @@ export default function Navbar() {
           {isAuthenticated && user ? (
             <div className="flex items-center gap-4">
               
+              {/* Live online user count */}
+              <div className="hidden sm:flex items-center gap-2 px-3 py-2 ml-5 bg-zinc-900/80 border border-white/30 rounded-full backdrop-blur-md">
+                <div className="relative flex h-2 w-2">
+                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                  <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
+                </div>
+                <span className="text-xs font-medium text-zinc-300">
+                  <strong className="text-white font-semibold">{liveUsers.toLocaleString()}</strong> online
+                </span>
+              </div>
+
               <div className="relative" ref={dropdownRef}>
                 <button 
                   onClick={() => setDropdownOpen(!dropdownOpen)}
@@ -85,7 +96,6 @@ export default function Navbar() {
                   }`}
                 >
                   {user?.premiumStatus ? (
-                    <>
                     <div className="w-full h-full rounded-full bg-[#15171B] flex items-center justify-center p-[2px]">
                       {user?.profileImage ? (
                         <img src={user.profileImage} alt="Profile" className="w-full h-full object-cover rounded-full" />
@@ -93,18 +103,6 @@ export default function Navbar() {
                         <User className="text-white w-4 h-4" />
                       )}
                     </div>
-
-                      {/* Live online user count */}
-                      <div className="hidden sm:flex items-center gap-2 px-3 py-2 ml-5  bg-zinc-900/80 border border-white/30 rounded-full backdrop-blur-md">
-                        <div className="relative flex h-2 w-2">
-                          <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
-                          <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
-                        </div>
-                        <span className="text-xs font-medium text-zinc-300">
-                          <strong className="text-white font-semibold">{liveUsers.toLocaleString()}</strong> online
-                        </span>
-                      </div>
-                    </>
                   ) : (
                     <>
                       {user?.profileImage ? (
@@ -112,18 +110,6 @@ export default function Navbar() {
                       ) : (
                         <User className="text-white w-5 h-5" />
                       )}
-
-
-                      {/* Live online user count */}
-                      <div className="hidden sm:flex items-center gap-2 px-3 py-2 ml-5  bg-zinc-900/80 border border-white/30 rounded-full backdrop-blur-md">
-                        <div className="relative flex h-2 w-2">
-                          <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
-                          <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
-                        </div>
-                        <span className="text-xs font-medium text-zinc-300">
-                          <strong className="text-white font-semibold">{liveUsers.toLocaleString()}</strong> online
-                        </span>
-                      </div>
                     </>
                   )}
                 </button>
