@@ -1,10 +1,6 @@
 {
   "rewrites": [
     {
-      "source": "/sitemap.xml",
-      "destination": "https://vibes-api.duckdns.org/sitemap.xml"
-    },
-    {
       "source": "/(.*)",
       "destination": "/index.html"
     }

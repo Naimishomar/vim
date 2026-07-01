@@ -1,4 +1,4 @@
 User-agent: *
 Allow: /
 
-Sitemap: https://vibelly-backend-url.com/sitemap.xml
+Sitemap: https://vibelly.vercel.app/sitemap.xml
