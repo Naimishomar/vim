@@ -85,6 +85,7 @@ export default function Navbar() {
                   }`}
                 >
                   {user?.premiumStatus ? (
+                    <>
                     <div className="w-full h-full rounded-full bg-[#15171B] flex items-center justify-center p-[2px]">
                       {user?.profileImage ? (
                         <img src={user.profileImage} alt="Profile" className="w-full h-full object-cover rounded-full" />
@@ -103,6 +104,7 @@ export default function Navbar() {
                           <strong className="text-white font-semibold">{liveUsers.toLocaleString()}</strong> online
                         </span>
                       </div>
+                    </>
                   ) : (
                     <>
                       {user?.profileImage ? (
