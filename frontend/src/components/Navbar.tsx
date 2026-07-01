@@ -91,7 +91,7 @@ export default function Navbar() {
                       ) : (
                         <User className="text-white w-4 h-4" />
                       )}
-
+                    </div>
 
                       {/* Live online user count */}
                       <div className="hidden sm:flex items-center gap-2 px-3 py-2 ml-5  bg-zinc-900/80 border border-white/30 rounded-full backdrop-blur-md">
@@ -103,7 +103,6 @@ export default function Navbar() {
                           <strong className="text-white font-semibold">{liveUsers.toLocaleString()}</strong> online
                         </span>
                       </div>
-                    </div>
                   ) : (
                     <>
                       {user?.profileImage ? (
