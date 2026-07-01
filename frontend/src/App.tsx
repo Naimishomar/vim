@@ -25,6 +25,11 @@ const ChatrouletteAlternative = lazy(() => import('./pages/ChatrouletteAlternati
 const Blog = lazy(() => import('./pages/Blog'));
 const BlogPost = lazy(() => import('./pages/BlogPost'));
 const OmegleUnbanned = lazy(() => import('./pages/OmegleUnbanned'));
+const RandomVideoChat = lazy(() => import('./pages/RandomVideoChat'));
+const TalkToStrangers = lazy(() => import('./pages/TalkToStrangers'));
+const AnonymousChat = lazy(() => import('./pages/AnonymousChat'));
+const ChatWithGirls = lazy(() => import('./pages/ChatWithGirls'));
+const VideoChatOnline = lazy(() => import('./pages/VideoChatOnline'));
 
 function ScrollToTop() {
   const { pathname } = useLocation();
@@ -102,6 +107,11 @@ function App() {
             <Route path="/ometv-alternative" element={<OmeTvAlternative />} />
             <Route path="/chatroulette-alternative" element={<ChatrouletteAlternative />} />
             <Route path="/omegle-unbanned" element={<OmegleUnbanned />} />
+            <Route path="/random-video-chat" element={<RandomVideoChat />} />
+            <Route path="/talk-to-strangers" element={<TalkToStrangers />} />
+            <Route path="/anonymous-chat" element={<AnonymousChat />} />
+            <Route path="/chat-with-girls" element={<ChatWithGirls />} />
+            <Route path="/video-chat-online" element={<VideoChatOnline />} />
             <Route path="/blog" element={<Blog />} />
             <Route path="/blog/:slug" element={<BlogPost />} />
           </Routes>
