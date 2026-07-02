@@ -30,6 +30,7 @@ const TalkToStrangers = lazy(() => import('./pages/TalkToStrangers'));
 const AnonymousChat = lazy(() => import('./pages/AnonymousChat'));
 const ChatWithGirls = lazy(() => import('./pages/ChatWithGirls'));
 const VideoChatOnline = lazy(() => import('./pages/VideoChatOnline'));
+const DynamicSeoPage = lazy(() => import('./pages/DynamicSeoPage'));
 
 function ScrollToTop() {
   const { pathname } = useLocation();
@@ -114,6 +115,7 @@ function App() {
             <Route path="/video-chat-online" element={<VideoChatOnline />} />
             <Route path="/blog" element={<Blog />} />
             <Route path="/blog/:slug" element={<BlogPost />} />
+            <Route path="/:slug" element={<DynamicSeoPage />} />
           </Routes>
         </Suspense>
       </Router>
