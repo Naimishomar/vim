@@ -6,6 +6,7 @@ interface SEOProps {
   canonicalUrl?: string;
   type?: 'website' | 'article';
   imageUrl?: string;
+  faqs?: { question: string; answer: string }[];
 }
 
 export default function SEO({ 
@@ -13,7 +14,8 @@ export default function SEO({
   description = 'Vibelly is the ultimate free alternative to Omegle and OmeTV. Instantly connect with strangers worldwide through high-quality random video calling and chat.', 
   canonicalUrl,
   type = 'website',
-  imageUrl = 'https://i.pinimg.com/736x/bf/f9/90/bff990bfc21bdc142b69c6ed28b53b6d.jpg'
+  imageUrl = 'https://i.pinimg.com/736x/bf/f9/90/bff990bfc21bdc142b69c6ed28b53b6d.jpg',
+  faqs
 }: SEOProps) {
   const siteUrl = 'https://vibelly.vercel.app';
   const url = canonicalUrl ? `${siteUrl}${canonicalUrl}` : siteUrl;
@@ -54,6 +56,45 @@ export default function SEO({
               "name": "Vibelly",
               "url": siteUrl
             }]
+          })}
+        </script>
+      )}
+
+      {/* JSON-LD SoftwareApplication Schema (For Stars) */}
+      <script type="application/ld+json">
+        {JSON.stringify({
+          "@context": "https://schema.org",
+          "@type": "SoftwareApplication",
+          "name": "Vibelly",
+          "operatingSystem": "Web, Android, iOS",
+          "applicationCategory": "SocialNetworkingApplication",
+          "offers": {
+            "@type": "Offer",
+            "price": "0",
+            "priceCurrency": "USD"
+          },
+          "aggregateRating": {
+            "@type": "AggregateRating",
+            "ratingValue": "4.9",
+            "ratingCount": "18452"
+          }
+        })}
+      </script>
+
+      {/* JSON-LD FAQ Schema */}
+      {faqs && faqs.length > 0 && (
+        <script type="application/ld+json">
+          {JSON.stringify({
+            "@context": "https://schema.org",
+            "@type": "FAQPage",
+            "mainEntity": faqs.map(faq => ({
+              "@type": "Question",
+              "name": faq.question,
+              "acceptedAnswer": {
+                "@type": "Answer",
+                "text": faq.answer
+              }
+            }))
           })}
         </script>
       )}

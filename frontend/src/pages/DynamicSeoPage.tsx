@@ -1,5 +1,5 @@
-import { useEffect, useState } from 'react';
-import { useNavigate, useParams } from 'react-router-dom';
+import { useEffect, useState, useMemo } from 'react';
+import { useNavigate, useParams, Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { Shield, Video, Zap, MessageSquare, Lock, Headphones } from 'lucide-react';
 import Navbar from '../components/Navbar';
@@ -70,12 +70,32 @@ export default function DynamicSeoPage() {
   const h1FirstPart = h1Words.slice(0, Math.max(1, h1Words.length - 2)).join(' ');
   const h1SecondPart = h1Words.slice(Math.max(1, h1Words.length - 2)).join(' ');
 
+  const allSlugs = Object.keys(seoData);
+  const relatedPages = useMemo(() => {
+    const shuffled = [...allSlugs].sort(() => 0.5 - Math.random());
+    return shuffled.filter(s => s !== slug).slice(0, 12);
+  }, [slug]);
+
   return (
     <div className="min-h-screen bg-[#15171B] text-white flex flex-col font-sans">
       <SEO 
         title={pageData.title} 
         description={pageData.desc}
         canonicalUrl={`/${slug}`}
+        faqs={[
+          {
+            question: "Do I need to sign up?",
+            answer: "No, you don't need to sign up or provide any personal information to start using the random video chat. Just click start and instantly connect with strangers worldwide."
+          },
+          {
+            question: "Is it safe to use?",
+            answer: "We prioritize user safety above all else. We use advanced moderation tools and allow users to report inappropriate behavior instantly, ensuring a safe and clean environment."
+          },
+          {
+            question: "Can I use it on my phone?",
+            answer: "Absolutely. Our platform is fully optimized for mobile browsers, meaning you can enjoy seamless video chat on your iPhone or Android device without downloading any apps."
+          }
+        ]}
       />
       <BlinkingDotsGrid />
       <div className="relative z-10 flex flex-col min-h-screen">
@@ -166,6 +186,24 @@ export default function DynamicSeoPage() {
             answer: "Absolutely. Our platform is fully optimized for mobile browsers, meaning you can enjoy seamless video chat on your iPhone or Android device without downloading any apps."
           }
         ]} />
+
+        {/* Internal Linking Mesh */}
+        <section className="px-6 py-16 bg-[#15171B] relative z-20">
+          <div className="max-w-4xl mx-auto">
+            <h2 className="text-2xl font-bold text-white mb-6">Explore More</h2>
+            <div className="flex flex-wrap gap-3">
+              {relatedPages.map((relatedSlug) => (
+                <Link
+                  key={relatedSlug}
+                  to={`/${relatedSlug}`}
+                  className="px-4 py-2 rounded-lg bg-white/5 border border-white/5 hover:border-white/20 hover:bg-white/10 text-zinc-400 hover:text-white transition-all text-sm"
+                >
+                  {seoData[relatedSlug].title.split('|')[0].trim()}
+                </Link>
+              ))}
+            </div>
+          </div>
+        </section>
 
         <div className="mt-auto relative z-20">
           <Footer />
