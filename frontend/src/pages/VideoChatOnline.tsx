@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { Shield, Video, Zap, MessageSquare, ArrowRight, Lock, Headphones, CheckCircle2, XCircle } from 'lucide-react';
+import { Shield, Video, Zap, MessageSquare, Lock, Headphones} from 'lucide-react';
 import Navbar from '../components/Navbar';
 import Footer from '../components/Footer';
 import SEO from '../components/SEO';
@@ -133,7 +133,20 @@ export default function VideoChatOnline() {
         </section>
 
         {/* FAQ Section */}
-        <FAQSection />
+        <FAQSection faqs={[
+          {
+            question: "Do I need to sign up?",
+            answer: "No, you don't need to sign up or provide any personal information to start using the random video chat. Just click start and instantly connect with strangers worldwide."
+          },
+          {
+            question: "Is it safe to use?",
+            answer: "We prioritize user safety above all else. We use advanced moderation tools and allow users to report inappropriate behavior instantly, ensuring a safe and clean environment."
+          },
+          {
+            question: "Can I use it on my phone?",
+            answer: "Absolutely. Our platform is fully optimized for mobile browsers, meaning you can enjoy seamless video chat on your iPhone or Android device without downloading any apps."
+          }
+        ]} />
 
         <div className="mt-auto relative z-20">
           <Footer />
