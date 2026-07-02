@@ -1,5 +1,6 @@
 import { Link } from 'react-router-dom';
 import { Mail } from 'lucide-react';
+import ProductHuntBadge from './ProductHuntBadge';
 
 export default function Footer() {
   return (
@@ -20,6 +21,9 @@ export default function Footer() {
           <p className="text-zinc-500 leading-relaxed max-w-xs">
             Connect instantly with verified users globally. Next-gen premium matching for real conversations.
           </p>
+          <div className="mt-4 transform scale-90 origin-left">
+            <ProductHuntBadge />
+          </div>
         </div>
 
         {/* Links */}
