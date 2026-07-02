@@ -59,17 +59,25 @@ export default function SEO({
       )}
 
       {/* JSON-LD Breadcrumb Schema */}
-      {canonicalUrl && (
+      {canonicalUrl && canonicalUrl !== '/' && (
         <script type="application/ld+json">
           {JSON.stringify({
             "@context": "https://schema.org",
             "@type": "BreadcrumbList",
-            "itemListElement": canonicalUrl.split('/').filter(Boolean).map((path, index, arr) => ({
-              "@type": "ListItem",
-              "position": index + 1,
-              "name": path.charAt(0).toUpperCase() + path.slice(1).replace(/-/g, ' '),
-              "item": `${siteUrl}/${arr.slice(0, index + 1).join('/')}`
-            }))
+            "itemListElement": [
+              {
+                "@type": "ListItem",
+                "position": 1,
+                "name": "Home",
+                "item": siteUrl
+              },
+              ...canonicalUrl.split('/').filter(Boolean).map((path, index, arr) => ({
+                "@type": "ListItem",
+                "position": index + 2,
+                "name": path.charAt(0).toUpperCase() + path.slice(1).replace(/-/g, ' '),
+                "item": `${siteUrl}/${arr.slice(0, index + 1).join('/')}`
+              }))
+            ]
           })}
         </script>
       )}
